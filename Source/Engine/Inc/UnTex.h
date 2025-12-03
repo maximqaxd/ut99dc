@@ -53,10 +53,10 @@ public:
 	FColor( BYTE InR, BYTE InG, BYTE InB, BYTE InA )
 	:	R(InR), G(InG), B(InB), A(InA) {}
 	FColor( const FPlane& P )
-	:	R(Clamp(appFloor(P.X*256),0,255))
-	,	G(Clamp(appFloor(P.Y*256),0,255))
-	,	B(Clamp(appFloor(P.Z*256),0,255))
-	,	A(Clamp(appFloor(P.W*256),0,255))
+	:	R(Clamp<INT>(appFloor(P.X*256),0,255))
+	,	G(Clamp<INT>(appFloor(P.Y*256),0,255))
+	,	B(Clamp<INT>(appFloor(P.Z*256),0,255))
+	,	A(Clamp<INT>(appFloor(P.W*256),0,255))
 	{}
 
 	// Serializer.
@@ -97,6 +97,14 @@ public:
 	{
 		DWORD D=GET_COLOR_DWORD(*this);
 		return ((D&0xf8) << 7) + ((D&0xf800) >> 6) + ((D&0xf80000) >> 19);
+	}
+	inline _WORD RGB888ToARGB1555() const
+	{
+		return ((B & 0xF8) >> 3) | ((G & 0xF8) << 2) | ((R & 0xF8) << 7) | 0x8000;
+	}
+	inline _WORD BGRA7777ToRGB565() const
+	{
+		return ((R & 0x7C) >> 2) | ((G & 0x7E) << 4) | ((B & 0x7C) << 9);
 	}
 	FVector Plane() const
 	{
@@ -222,6 +230,15 @@ enum ETextureFormat
 	TEXF_RGB8       = 0x04,
 	TEXF_RGBA8      = 0x05,
 	TEXF_MAX		= 0xff,
+
+	TEXF_EXT_START         = 128, // beginning of extended formats
+	TEXF_EXT_ARGB1555      = 128, // 16bpp ARGB1555
+	TEXF_EXT_ARGB1555_TWID = 129, // [Dreamcast] pre-twiddled 16bpp ARGB1555
+	TEXF_EXT_ARGB1555_VQ   = 130, // [Dreamcast] VQ-compressed pre-twiddled ARGB1555
+	TEXF_EXT_RGB565_TWID   = 131, // [Dreamcast] pre-twiddled RGB565
+	TEXF_EXT_RGB565_VQ     = 132, // [Dreamcast] VQ-compressed pre-twiddled RGB565
+	
+	TEXF_EXT_MAX
 };
 
 //

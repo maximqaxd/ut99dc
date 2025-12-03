@@ -407,7 +407,13 @@ void AActor::execPollSleep( FFrame& Stack, RESULT_DECL )
 {
 	guardSlow(AActor::execPollSleep);
 
+#ifdef PLATFORM_DREAMCAST
+	// try to avoid potential unaligned accesses
+	FLOAT DeltaSeconds = 0.0f;
+	__builtin_memcpy( (void*)&DeltaSeconds, (void*)Result, sizeof(FLOAT) );
+#else
 	FLOAT DeltaSeconds = *(FLOAT*)Result;
+#endif
 	if( (LatentFloat-=DeltaSeconds) < 0.5 * DeltaSeconds )
 	{
 		// Awaken.

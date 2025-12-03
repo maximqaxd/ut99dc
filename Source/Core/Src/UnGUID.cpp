@@ -95,12 +95,21 @@ void get_ieee_node_identifier( byte* nodeid )
 {
 	unsigned32 ip32;
 	unsigned16 random16;
-
+#ifdef PLATFORM_DREAMCAST
+  ip32 = 0x0100007f; // 127.0.0.1
+#else
 	ip32 = appGetLocalIP();
+#endif
 	random16 = true_random();
 
+#ifdef PLATFORM_DREAMCAST
+	// avoid unaligned access
+	memcpy(nodeid + 0, &ip32, sizeof(ip32));
+	memcpy(nodeid + 4, &random16, sizeof(random16));
+#else
 	*(unsigned32*)&nodeid[0] = ip32;
 	*(unsigned16*)&nodeid[4] = random16;
+#endif
 }
 
 /*----------------------------------------------------------------------------

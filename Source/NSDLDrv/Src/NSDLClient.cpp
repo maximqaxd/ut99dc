@@ -226,7 +226,7 @@ void UNSDLClient::MakeCurrent( UViewport* InViewport )
 UViewport* UNSDLClient::NewViewport( const FName Name )
 {
 	guard(UNSDLClient::NewViewport);
-	return new( GetTransientPackage(), Name )UNSDLViewport( NULL, this );
+	return new( this, Name )UNSDLViewport( NULL, this );
 	unguard;
 }
 

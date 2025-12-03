@@ -27,7 +27,8 @@ BYTE CORE_API GRegisterNative( INT iNative, const Native& Func );
 #else
 	#define IMPLEMENT_FUNCTION(cls,num,func) \
 		extern "C" DLL_EXPORT { Native int##cls##func = (Native)&cls::func; } \
-		static BYTE cls##func##Temp = GRegisterNative( num, int##cls##func );
+		static BYTE cls##func##Temp = GRegisterNative( num, int##cls##func ); \
+		STATIC_EXPORT( int##cls##func, int##cls##func )
 #endif
 
 /*-----------------------------------------------------------------------------
@@ -117,31 +118,56 @@ inline void FFrame::Step( UObject* Context, RESULT_DECL )
 }
 inline INT FFrame::ReadInt()
 {
+#ifdef PLATFORM_DREAMCAST
+	INT Result;
+	__builtin_memcpy( &Result, Code, sizeof( Result ) );
+#else
 	INT Result = *(INT*)Code;
+#endif
 	Code += sizeof(INT);
 	return Result;
 }
 inline UObject* FFrame::ReadObject()
 {
+#ifdef PLATFORM_DREAMCAST
+	UObject* Result;
+	__builtin_memcpy( &Result, Code, sizeof( Result ) );
+#else
 	UObject* Result = *(UObject**)Code;
+#endif
 	Code += sizeof(INT);
 	return Result;
 }
 inline FLOAT FFrame::ReadFloat()
 {
+#ifdef PLATFORM_DREAMCAST
+	FLOAT Result;
+	__builtin_memcpy( &Result, Code, sizeof( Result ) );
+#else
 	FLOAT Result = *(FLOAT*)Code;
+#endif
 	Code += sizeof(FLOAT);
 	return Result;
 }
 inline INT FFrame::ReadWord()
 {
+#ifdef PLATFORM_DREAMCAST
+	_WORD Result;
+	__builtin_memcpy( &Result, Code, sizeof( Result ) );
+#else
 	INT Result = *(_WORD*)Code;
+#endif
 	Code += sizeof(_WORD);
 	return Result;
 }
 inline FName FFrame::ReadName()
 {
+#ifdef PLATFORM_DREAMCAST
+	FName Result;
+	__builtin_memcpy( &Result, Code, sizeof( Result ) );
+#else
 	FName Result = *(FName*)Code;
+#endif
 	Code += sizeof(FName);
 	return Result;
 }

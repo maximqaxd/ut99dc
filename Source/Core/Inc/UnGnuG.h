@@ -25,7 +25,7 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
-
+#include <malloc.h>
 #ifdef PLATFORM_WIN32
 #include <minwindef.h>
 #endif
@@ -59,14 +59,6 @@ enum {CACHE_LINE_SIZE   = 32}; // Cache line size.
 #define GCC_PACK(n) __attribute__((packed,aligned(n)))
 #define GCC_ALIGN(n) __attribute__((aligned(n)))
 
-#ifdef PLATFORM_WIN32
-#define GCC_HIDDEN
-#elif !defined(UNREAL_STATIC)
-#define GCC_HIDDEN __attribute__((visibility("hidden")))
-#else
-#define GCC_HIDDEN
-#endif
-
 // Optimization macros
 
 #define DISABLE_OPTIMIZATION _Pragma("GCC push_options") \
@@ -84,6 +76,22 @@ enum {CACHE_LINE_SIZE   = 32}; // Cache line size.
 #define FORCEINLINE /* Force code to be inline */
 #define ZEROARRAY 0 /* Zero-length arrays in structs */
 #define __cdecl
+
+
+#ifdef UNREAL_STATIC
+#undef DLL_IMPORT
+#define DLL_IMPORT
+#endif
+
+#ifdef PLATFORM_WIN32
+#define GCC_HIDDEN
+#elif !defined(UNREAL_STATIC)
+#define GCC_HIDDEN __attribute__((visibility("hidden")))
+#else
+#define GCC_HIDDEN
+#endif
+
+#define GCC_USED __attribute__((used))
 
 // Variable arguments.
 #define GET_VARARGS(msg,len,fmt)	\
@@ -134,7 +142,7 @@ typedef double				DOUBLE;		// 64-bit IEEE double.
 typedef size_t        		SIZE_T;     // Corresponds to C SIZE_T.
 
 // Bitfield type.
-typedef unsigned int		BITFIELD;	// For bitfields.
+typedef uint32_t			BITFIELD;	// For bitfields.
 
 
 // Make sure characters are unsigned.
@@ -159,10 +167,15 @@ static_assert((char)-1 < 0, "char must be signed.");
 #define NULL 0
 
 // Package implementation.
-#define IMPLEMENT_PACKAGE_PLATFORM(pkgname) \
-	extern "C" {HINSTANCE hInstance;} \
-	BYTE GLoaded##pkgname;
-
+#ifdef UNREAL_STATIC
+	#define IMPLEMENT_PACKAGE_PLATFORM(pkgname) \
+		extern "C" {BYTE GCC_USED DLL_EXPORT GLoaded##pkgname;} \
+		STATIC_EXPORT( GLoaded##pkgname, GLoaded##pkgname )
+#else
+	#define IMPLEMENT_PACKAGE_PLATFORM(pkgname) \
+		extern "C" {HINSTANCE hInstance;} \
+		BYTE GLoaded##pkgname;
+#endif
 // Platform support options.
 #define PLATFORM_NEEDS_ARRAY_NEW 1
 #define FORCE_ANSI_LOG           0

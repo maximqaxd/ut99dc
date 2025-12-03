@@ -456,7 +456,7 @@ const TCHAR* UInput::GetKeyName( EInputKey Key ) const
 //
 // Find the index of a named key.
 //
-UBOOL UInput::FindKeyName( const TCHAR* KeyName, EInputKey& iKey ) const
+int UInput::FindKeyName( const TCHAR* KeyName, EInputKey& iKey ) const
 {
 	guard(UInput::FindKeyName);
 	TCHAR Temp[256];

@@ -5,7 +5,11 @@
 	Revision history:
 		* Created by Tim Sweeney
 =============================================================================*/
-
+#ifdef PLATFORM_DREAMCAST
+#include "dc/fmath.h"
+#elif defined(PLATFORM_LOW_MEMORY)
+#include <math.h>
+#endif
 /*-----------------------------------------------------------------------------
 	Defintions.
 -----------------------------------------------------------------------------*/
@@ -835,6 +839,49 @@ public:
 	const FCoords	ViewCoords;
 
 	// Basic math functions.
+#ifdef PLATFORM_DREAMCAST
+	FLOAT Sqrt( int i )
+	{
+		return fsqrt( (FLOAT)i / 16384.f );
+	}
+	FLOAT SinTab( int i )
+	{
+		return fsin( ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES );
+	}
+	FLOAT CosTab( int i )
+	{
+		return fcos( ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES );
+	}
+	FLOAT SinFloat( FLOAT F )
+	{
+		return fsin( F );
+	}
+	FLOAT CosFloat( FLOAT F )
+	{
+		return fcos( F );
+	}
+#elif defined(PLATFORM_LOW_MEMORY)
+	FLOAT Sqrt( int i )
+	{
+		return sqrtf( (FLOAT)i / 16384.f );
+	}
+	FLOAT SinTab( int i )
+	{
+		return sinf( ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES );
+	}
+	FLOAT CosTab( int i )
+	{
+		return cosf( ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES );
+	}
+	FLOAT SinFloat( FLOAT F )
+	{
+		return sinf( F );
+	}
+	FLOAT CosFloat( FLOAT F )
+	{
+		return cosf( F );
+	}
+#else
 	FLOAT Sqrt( int i )
 	{
 		return SqrtFLOAT[i]; 
@@ -855,15 +902,17 @@ public:
 	{
 		return CosTab((F*65536)/(2.0*PI));
 	}
-
+#endif
 	// Constructor.
 	FGlobalMath();
 
+#ifndef PLATFORM_LOW_MEMORY
 private:
 	// Tables.
 	FLOAT  TrigFLOAT		[NUM_ANGLES];
 	FLOAT  SqrtFLOAT		[NUM_SQRTS];
 	FLOAT  LightSqrtFLOAT	[NUM_SQRTS];
+#endif
 };
 
 inline INT ReduceAngle( INT Angle )
@@ -945,7 +994,7 @@ inline FVector FVector::MirrorByPlane( const FPlane& Plane ) const
 // Compare two points and see if they're the same, using a threshold.
 // Returns 1=yes, 0=no.  Uses fast distance approximation.
 //
-inline int FPointsAreSame( const FVector &P, const FVector &Q )
+inline UBOOL FPointsAreSame( const FVector &P, const FVector &Q )
 {
 	FLOAT Temp;
 	Temp=P.X-Q.X;
@@ -968,7 +1017,7 @@ inline int FPointsAreSame( const FVector &P, const FVector &Q )
 // Compare two points and see if they're the same, using a threshold.
 // Returns 1=yes, 0=no.  Uses fast distance approximation.
 //
-inline int FPointsAreNear( const FVector &Point1, const FVector &Point2, FLOAT Dist )
+inline UBOOL FPointsAreNear( const FVector &Point1, const FVector &Point2, FLOAT Dist )
 {
 	FLOAT Temp;
 	Temp=(Point1.X - Point2.X); if (Abs(Temp)>=Dist) return 0;
@@ -1010,7 +1059,7 @@ inline FLOAT FDistSquared( const FVector &V1, const FVector &V2 )
 //
 // See if two normal vectors (or plane normals) are nearly parallel.
 //
-inline int FParallel( const FVector &Normal1, const FVector &Normal2 )
+inline UBOOL FParallel( const FVector &Normal1, const FVector &Normal2 )
 {
 	FLOAT NormalDot = Normal1 | Normal2;
 	return (Abs (NormalDot - 1.0) <= THRESH_VECTORS_ARE_PARALLEL);
@@ -1019,7 +1068,7 @@ inline int FParallel( const FVector &Normal1, const FVector &Normal2 )
 //
 // See if two planes are coplanar.
 //
-inline int FCoplanar( const FVector &Base1, const FVector &Normal1, const FVector &Base2, const FVector &Normal2 )
+inline UBOOL FCoplanar( const FVector &Base1, const FVector &Normal1, const FVector &Base2, const FVector &Normal2 )
 {
 	if      (!FParallel(Normal1,Normal2)) return 0;
 	else if (FPointPlaneDist (Base2,Base1,Normal1) > THRESH_POINT_ON_PLANE) return 0;

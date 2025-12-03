@@ -185,7 +185,7 @@ void FName::DisplayHash( FOutputDevice& Ar )
 //
 // Delete an name permanently; called by garbage collector.
 //
-void FName::DeleteEntry( INT i )
+void FName::DeleteEntry( int i )
 {
 	guard(FName::DeleteEntry);
 

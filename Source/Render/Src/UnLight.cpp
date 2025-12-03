@@ -1164,7 +1164,7 @@ void FLightManager::spatial_Cylinder( FTextureInfo& Map, FLightInfo* Info, BYTE*
 	SPATIAL_PRE
 		FVector Vertex = Vertex1 - Info->Actor->Location;
 		for( INT i=Info->MinU; i<Info->MaxU; i++,Vertex+=VertexDU,Src++,Dest++ )
-			*Dest = Max(0,appFloor(*Src * (1.0 - ( Square(Vertex.X) + Square(Vertex.Y) ) * Square(Info->RRadius)) ));
+			*Dest = Max<INT>( 0, appFloor(*Src * (1.0 - ( Square(Vertex.X) + Square(Vertex.Y) ) * Square(Info->RRadius)) ) );
 	SPATIAL_POST
 	unguardSlow;
 }
@@ -1437,9 +1437,9 @@ void FLightInfo::ComputeFromActor( FTextureInfo* Map, FSceneNode* Frame )
 			INT FixB = 0; INT FixDB=appFloor(FloatColor.Z*65536.0);
 			for( INT i=0; i<256; i++ )
 			{
-				Palette[i].B = Min(Unfix(FixR),127); FixR+=FixDR;
-				Palette[i].G = Min(Unfix(FixG),127); FixG+=FixDG;
-				Palette[i].R = Min(Unfix(FixB),127); FixB+=FixDB;
+				Palette[i].B = Min<INT>( Unfix(FixR), 127 ); FixR+=FixDR;
+				Palette[i].G = Min<INT>( Unfix(FixG), 127 ); FixG+=FixDG;
+				Palette[i].R = Min<INT>( Unfix(FixB), 127 ); FixB+=FixDB;
 				Palette[i].A = 255;
 			}
 		}
@@ -1457,10 +1457,10 @@ void FLightInfo::ComputeFromActor( FTextureInfo* Map, FSceneNode* Frame )
 		FLOAT   RadiusV     = PlaneRadius * SqrtApprox(FLightManager::MapCoords->YAxis.SizeSquared());
 
 		// Save clipping region.
-		MinU = Max( appRound( (CenterU - RadiusU)/FLightManager::LightMap.UScale), 0 );
-		MinV = Max( appRound( (CenterV - RadiusV)/FLightManager::LightMap.VScale), 0 );
-		MaxU = Min( appRound( (CenterU + RadiusU)/FLightManager::LightMap.UScale), FLightManager::LightMap.UClamp );
-		MaxV = Min( appRound( (CenterV + RadiusV)/FLightManager::LightMap.VScale), FLightManager::LightMap.VClamp );
+		MinU = Max<INT>( appRound( (CenterU - RadiusU)/FLightManager::LightMap.UScale), 0 );
+		MinV = Max<INT>( appRound( (CenterV - RadiusV)/FLightManager::LightMap.VScale), 0 );
+		MaxU = Min<INT>( appRound( (CenterU + RadiusU)/FLightManager::LightMap.UScale), FLightManager::LightMap.UClamp );
+		MaxV = Min<INT>( appRound( (CenterV + RadiusV)/FLightManager::LightMap.VScale), FLightManager::LightMap.VClamp );
 	}
 
 	// Init volumetric lighting.
@@ -1486,10 +1486,10 @@ void FLightInfo::ComputeFromActor( FTextureInfo* Map, FSceneNode* Frame )
 			INT FixA = 0; INT FixDA=appFloor(VolumetricColor.W*65536.0);
 			for( INT i=0; i<256; i++ )
 			{
-				VolPalette[i].B = Min(Unfix(FixR),127); FixR+=FixDR;
-				VolPalette[i].G = Min(Unfix(FixG),127); FixG+=FixDG;
-				VolPalette[i].R = Min(Unfix(FixB),127); FixB+=FixDB;
-				VolPalette[i].A = Min(Unfix(FixA),127); FixA+=FixDA;
+				VolPalette[i].B = Min<INT>( Unfix(FixR), 127 ); FixR+=FixDR;
+				VolPalette[i].G = Min<INT>( Unfix(FixG), 127 ); FixG+=FixDG;
+				VolPalette[i].R = Min<INT>( Unfix(FixB), 127 ); FixB+=FixDB;
+				VolPalette[i].A = Min<INT>( Unfix(FixA), 127 ); FixA+=FixDA;
 			}
 		}
 		VolPalette = (FColor*)(Color+1);
@@ -2094,7 +2094,7 @@ DWORD FLightManager::SetupForActor( FSceneNode* InFrame, AActor* InActor, FVolAc
 	&&	!Frame->Viewport->GetOuterUClient()->NoLighting )
 	{
 		// Get actor light cache.
-		INT Delta      = Clamp((INT)((Frame->Viewport->CurrentTime-Frame->Viewport->LastUpdateTime)*768),0,255);
+		INT Delta      = Clamp<INT>( (INT)((Frame->Viewport->CurrentTime-Frame->Viewport->LastUpdateTime)*768), 0, 255 );
 		INT FrameCount = Frame->Viewport->FrameCount;
 		INT* Num       = NULL;
 		struct FInfo
@@ -2202,12 +2202,12 @@ DWORD FLightManager::SetupForActor( FSceneNode* InFrame, AActor* InActor, FVolAc
 				if( Threshold==-1 )
 					Threshold = Consider[i]->LightingTag/8;
 				AddLight( Actor, Consider[i] );
-				Consider[i]->SpecialTag = Min( (INT)Consider[i]->SpecialTag+Delta, 255 ) | 1;
+				Consider[i]->SpecialTag = Min<INT>( (INT)Consider[i]->SpecialTag+Delta, 255 ) | 1;
 			}
 			else
 			{
 				// This light is not considered visible.
-				Consider[i]->SpecialTag = Max( (INT)Consider[i]->SpecialTag-Delta, 0 ) & ~1;
+				Consider[i]->SpecialTag = Max<INT>( (INT)Consider[i]->SpecialTag-Delta, 0 ) & ~1;
 				if( Consider[i]->SpecialTag>0 )
 					AddLight( Actor, Consider[i] );
 			}

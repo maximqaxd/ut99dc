@@ -22,7 +22,7 @@ void FSoundData::Load()
 	guard(0);
 	TLazyArray<BYTE>::Load();
 	unguard;
-
+#ifndef PLATFORM_LOW_MEMORY
 	if( Loaded )
 	{
 		// Calculate our duration.
@@ -99,6 +99,7 @@ void FSoundData::Load()
 			Owner->Audio->RegisterSound( Owner );
 		unguard;
 	}
+#endif
 	unguard;
 }
 
@@ -110,6 +111,7 @@ FLOAT FSoundData::GetPeriod()
 	unguard;
 	// Calculate the sound's duration.
 	FLOAT Period = 0.0f;
+#ifndef PLATFORM_LOW_MEMORY
 	FWaveModInfo WaveInfo;
 	if( WaveInfo.ReadWaveInfo(*this) )
 	{
@@ -120,6 +122,7 @@ FLOAT FSoundData::GetPeriod()
 		if ( DurDiv ) Period = *WaveInfo.pWaveDataSize * 8.f / (FLOAT)DurDiv;
 		//debugf(TEXT("Name %19s pChannels %9i pBitsps %9i pSampPs %9i pWaveDataSize %9i Time %9f"),Owner->GetName(),*WaveInfo.pChannels,*WaveInfo.pBitsPerSample,*WaveInfo.pSamplesPerSec,*WaveInfo.pWaveDataSize, Period );
 	}	
+#endif
 	return Period;
 }
 
@@ -130,9 +133,32 @@ void USound::Serialize( FArchive& Ar )
 	Ar << FileType;
 	if( Ar.IsLoading() || Ar.IsSaving() )
 	{
+#ifdef PLATFORM_LOW_MEMORY
+		// Low memory: read the seek position and skip the data
+		if( Ar.IsLoading() && Ar.Ver() > 61 )
+		{
+			INT SeekPos = 0;
+			Ar << SeekPos;
+			Ar.Seek( SeekPos );
+		}
+		else
+		{
+			Ar << Data;
+			Data.Empty();
+		}
+		OriginalSize = 0;
+#else
 		Ar << Data;
+		if( Ar.IsLoading() )
+		{
+			OriginalSize = Data.Num();
+		}
+#endif
 	}
-	else Ar.CountBytes( OriginalSize, OriginalSize );
+	else
+	{
+		Ar.CountBytes( OriginalSize, OriginalSize );
+	}
 	unguard;
 }
 
@@ -157,6 +183,7 @@ IMPLEMENT_CLASS(USound);
 /*-----------------------------------------------------------------------------
 	WaveModInfo implementation - downsampling of wave files.
 -----------------------------------------------------------------------------*/
+#ifndef PLATFORM_LOW_MEMORY
 
 //
 //	Figure out the WAVE file layout.
@@ -510,7 +537,7 @@ void FWaveModInfo::NoiseGateFilter()
 	}
 	unguard;
 }
-
+#endif
 /*-----------------------------------------------------------------------------
 	UMusic implementation.
 -----------------------------------------------------------------------------*/
@@ -522,11 +549,30 @@ void UMusic::Serialize( FArchive& Ar )
 	Ar << FileType;
 	if( Ar.IsLoading() || Ar.IsSaving() )
 	{
+#ifdef PLATFORM_LOW_MEMORY
+		// Low memory: read the seek position and skip the data
+		if( Ar.IsLoading() && Ar.Ver() > 61 )
+		{
+			INT SeekPos = 0;
+			Ar << SeekPos;
+			Ar.Seek( SeekPos );
+		}
+		else
+		{
+			Ar << Data;
+			Data.Empty();
+		}
+		OriginalSize = 0;
+#else
 		Ar << Data;
 		if( Ar.IsLoading() )
 			OriginalSize = Data.Num();
+#endif
 	}
-	else Ar.CountBytes( OriginalSize, OriginalSize );
+	else
+	{
+		Ar.CountBytes( OriginalSize, OriginalSize );
+	}
 	unguard;
 }
 void UMusic::Destroy()

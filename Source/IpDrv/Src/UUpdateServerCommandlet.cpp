@@ -205,7 +205,7 @@ class UUpdateServerCommandlet : public UCommandlet
 
 		ANSICHAR Buffer[1024];
 		sockaddr_in FromAddr;
-		size_t FromSize = sizeof(FromAddr);
+		socklen_t FromSize = sizeof(FromAddr);
 		fd_set SocketSet;
 		TIMEVAL SelectTime = {1, 0};
 		FD_ZERO( &SocketSet );

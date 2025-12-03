@@ -815,7 +815,7 @@ ULevel* UGameEngine::LoadMap( const FURL& URL, UPendingLevel* Pending, const TMa
 	Info->HubStackLevel
 	=	URL.HasOption(TEXT("load")) ? Info->HubStackLevel
 	:	URL.HasOption(TEXT("push")) ? SavedHubStackLevel+1
-	:	URL.HasOption(TEXT("pop" )) ? Max(SavedHubStackLevel-1,0)
+	:	URL.HasOption(TEXT("pop" )) ? Max<INT>(SavedHubStackLevel-1,0)
 	:	URL.HasOption(TEXT("peer")) ? SavedHubStackLevel
 	:	                              0;
 	unguard;
@@ -1369,11 +1369,11 @@ FLOAT UGameEngine::GetMaxTickRate()
 	guard(UGameEngine::GetMaxTickRate);
 	static UBOOL LanPlay = ParseParam(appCmdLine(),TEXT("lanplay"));
 	if( GLevel && GLevel->NetDriver && !GIsClient )
-		return Clamp( LanPlay ? GLevel->NetDriver->LanServerMaxTickRate : GLevel->NetDriver->NetServerMaxTickRate, 10, 120 );
+		return Clamp<INT>( LanPlay ? GLevel->NetDriver->LanServerMaxTickRate : GLevel->NetDriver->NetServerMaxTickRate, 10, 120 );
 	else if( GLevel && GLevel->NetDriver && GLevel->NetDriver->ServerConnection )
 		return GLevel->NetDriver->ServerConnection->CurrentNetSpeed/64;
 	else if( GLevel && GLevel->DemoRecDriver && !GLevel->DemoRecDriver->ServerConnection )
-		return Clamp( LanPlay ? GLevel->NetDriver->LanServerMaxTickRate : GLevel->DemoRecDriver->NetServerMaxTickRate, 10, 120 );
+		return Clamp<INT>( LanPlay ? GLevel->NetDriver->LanServerMaxTickRate : GLevel->DemoRecDriver->NetServerMaxTickRate, 10, 120 );
 	else
 		return 0;
 	unguard;

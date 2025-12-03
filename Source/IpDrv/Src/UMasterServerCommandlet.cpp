@@ -160,7 +160,7 @@ class UMasterServerCommandlet : public UCommandlet
 		{
 			ANSICHAR Buffer[1024];
 			sockaddr_in FromAddr;
-			size_t FromSize = sizeof(FromAddr);
+			socklen_t FromSize = sizeof(FromAddr);
 			fd_set SocketSet;
 			TIMEVAL SelectTime = {0, 0};
 			FD_ZERO( &SocketSet );
@@ -197,7 +197,7 @@ class UMasterServerCommandlet : public UCommandlet
 				// Nothing waiting.
 				return;
 			}
-			size_t i = sizeof(SOCKADDR);
+			socklen_t i = sizeof(SOCKADDR);
 			SOCKADDR_IN ForeignHost;
 			INT IncomingSocket = accept( TCPSocket.Socket, (LPSOCKADDR) &ForeignHost, &i );
 			if ( IncomingSocket == INVALID_SOCKET )

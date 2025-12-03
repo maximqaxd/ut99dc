@@ -10,6 +10,16 @@
 =============================================================================*/
 #if __GNUG__
 
+
+#if defined(PLATFORM_SDL)
+#include <SDL2/SDL.h>
+#elif defined(PLATFORM_DREAMCAST)
+#include <kos.h>
+#include <dirent.h>
+#else
+#error "Unsupported platform."
+#endif
+
 // Standard includes.
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,15 +34,14 @@
 #include <utime.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#ifndef UNREAL_STATIC
 #include <dlfcn.h>
+#endif
 #include <netdb.h>
 
 // Core includes.
 #include "CorePrivate.h"
 #include "UnUnix.h"
-#ifdef PLATFORM_SDL
-#include <SDL2/SDL.h>
-#endif
 /*-----------------------------------------------------------------------------
 	Globals
 -----------------------------------------------------------------------------*/
@@ -102,6 +111,7 @@ UBOOL USystem::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 	}
 	else if( ParseCommand( &Cmd, TEXT("RELAUNCH") ) )
 	{
+#ifndef PLATFORM_DREAMCAST
 		debugf( TEXT("Relaunch: %s"), Cmd );
 		GConfig->Flush( 0 );
 
@@ -122,7 +132,7 @@ UBOOL USystem::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 		} else {
 			appRequestExit( 0 );
 		}
-
+#endif
 		return 1;
 	}
 	else if( ParseCommand( &Cmd, TEXT("DEBUG") ) )
@@ -206,10 +216,36 @@ CORE_API void ClipboardPaste( FString& Result )
 /*-----------------------------------------------------------------------------
 	Shared libraries.
 -----------------------------------------------------------------------------*/
+#ifdef UNREAL_STATIC
 
 //
 // Load a library.
 //
+CORE_API void* appGetDllHandle( const char* Filename )
+{
+	guard(appGetDllHandle);
+
+	char Test[1024];
+	const char* PackageName = Filename;
+	char* Cur;
+
+	check(Filename);
+
+	// Get GLoadedPackage symbol name from full path.
+	while( ( Cur = appStrchr( PackageName, '/' ) ) != NULL )
+		PackageName = Cur + 1;
+	while( ( Cur = appStrchr( PackageName, '\\' ) ) != NULL )
+		PackageName = Cur + 1;
+	appSprintf( Test, "GLoaded%s", PackageName );
+	if( (Cur = appStrchr( Test, '.' )) != NULL )
+		*Cur = '\0';
+
+	return appGetStaticExport( Test );
+
+	unguard;
+}
+
+#else
 void* appGetDllHandle( const TCHAR* Filename )
 {
 	guard(appGetDllHandle);
@@ -257,7 +293,7 @@ void* appGetDllHandle( const TCHAR* Filename )
 	return Result;
 	unguard;
 }
-
+#endif
 //
 // Free a library.
 //
@@ -266,8 +302,13 @@ void appFreeDllHandle( void* DllHandle )
 	guard(appFreeDllHandle);
 	check(DllHandle);
 
+#if defined(UNREAL_STATIC)
+	// nothing
+#elif defined(PLATFORM_WIN32)
+	FreeLibrary( (HMODULE)DllHandle );
+#else
 	dlclose( DllHandle );
-
+#endif
 	unguard;
 }
 
@@ -282,15 +323,16 @@ void* appGetDllExport( void* DllHandle, const TCHAR* ProcName )
 
 	void* Result;
 	TCHAR* Error;
-
+#if defined(UNREAL_STATIC)
+	return appGetStaticExport( ProcName );
+#else
 	dlerror();	// Clear any error condition.
-
 	Result = (void*)dlsym( DllHandle, appToAnsi(ProcName) );
 	Error = dlerror();
 	if( Error != NULL )
 		debugf( "dlerror: %s", Error );
 	return Result;
-
+#endif
 	unguard;
 }
 
@@ -312,6 +354,7 @@ void appDebugBreak()
 
 void appCreateProc( const TCHAR* URL, const TCHAR* Parms )
 {
+#ifndef PLATFORM_DREAMCAST
 	guard(appCreateProc);
 
 	debugf( TEXT("Create Proc: %s %s"), URL, Parms );
@@ -339,6 +382,7 @@ void appCreateProc( const TCHAR* URL, const TCHAR* Parms )
 		INT error = execv( URL, argv );
 
 	unguard;
+#endif
 }
 
 /*-----------------------------------------------------------------------------
@@ -569,30 +613,58 @@ CORE_API FString appClipboardPaste()
 -----------------------------------------------------------------------------*/
 
 // Get startup directory.
-CORE_API const TCHAR* appBaseDir()
+CORE_API const char* appBaseDir()
 {
-	guard(appBaseDir);
-	static TCHAR BaseDir[PATH_MAX]=TEXT("");
+	static char BaseDir[1024]="";
+
 	if( !BaseDir[0] )
 	{
-		// If the executable isn't launched from its own directory, then the
-		// dynamic linker won't be able to find the shared libraries.
-		if( getcwd( BaseDir, sizeof(BaseDir) ) == NULL )
-			appStrcpy( BaseDir, TEXT("./") );
-		else
-			appStrcat( BaseDir, "/" );
+		// Get directory this executable was launched from.
+#if defined(PLATFORM_SDL)
+		char* BasePath = SDL_GetBasePath();
+		appStrncpy( BaseDir, BasePath, sizeof(BaseDir) );
+		SDL_free( BasePath );
+#elif defined(PLATFORM_DREAMCAST)
+		// try PC/SD/HDD first, then CD
+		static const char* Paths[] =
+		{
+			"/pc/Unreal/System/",
+#ifdef DREAMCAST_USE_FATFS
+			"/sd/Unreal/System/",
+			"/ide/Unreal/System/",
+#endif
+			"/cd/System/"
+		};
+		for( INT i = 0; i < ARRAY_COUNT( Paths ); ++i )
+		{
+			if( DIR* Dirp = opendir( Paths[i] ) )
+			{
+				strcpy( BaseDir, Paths[i] );
+				closedir( Dirp );
+				break;
+			}
+		}
+#endif
+		// Fallback to CWD.
+		if ( !BaseDir[0] )
+			strcpy( BaseDir, "./" );
 	}
-	return BaseDir;
-	unguard;
-}
 
+	return BaseDir;
+}
 // Get computer name.
 CORE_API const TCHAR* appComputerName()
 {
 	guard(appComputerName);
 	static TCHAR Result[256]="";
 	if( !Result[0] )
+	{
+#ifdef PLATFORM_DREAMCAST
+		appStrcpy( Result, "localhost" );
+#else
 		gethostname( Result, sizeof(Result) );
+#endif
+	}
 	return Result;
 	unguard;
 }
@@ -642,14 +714,30 @@ void appPlatformInit()
 
 	// CPU speed.
 	GTimestamp = 1;
-	DWORD a = appCycles();
-	appSleep(1);
-	DWORD b = appCycles();
-	DWORD CyclesPerSecond = b - a;
-	DOUBLE ASecond = 1.0;
-	GSecondsPerCycle = 1.0 / CyclesPerSecond;
-	debugf( NAME_Init, TEXT("CPU Speed=%f MHz"), 0.000001 / GSecondsPerCycle );
-	
+#if defined(PLATFORM_DREAMCAST)
+	debugf( NAME_Init, "Detected: Dreamcast / KOS" );
+
+	// CPU speed.
+	DOUBLE Frequency = 1000000.0; // we're using a microsecond timer
+	GSecondsPerCycle = 1.0 / Frequency;
+	debugf( NAME_Init, "CPU Timer Freq=%f Hz", (FLOAT)Frequency );
+
+	// Get CPU info.
+	GPageSize = 4096;
+	GProcessorCount = 1;
+#elif defined(PLATFORM_SDL)
+	debugf( NAME_Init, "Detected: %s", SDL_GetPlatform() );
+
+	// CPU speed.
+	DOUBLE Frequency = SDL_GetPerformanceFrequency();
+	check(Frequency!=0.0);
+	GSecondsPerCycle = 1.0 / Frequency;
+	debugf( NAME_Init, "CPU Timer Freq=%f Hz", (FLOAT)Frequency );
+
+	// Get CPU info.
+	GPageSize = 4096; // TODO: sysconf?
+	GProcessorCount = SDL_GetCPUCount();
+#endif // PLATFORM_
 	unguard;
 }
 
@@ -692,14 +780,33 @@ char* appUnixPath( const TCHAR* Path )
 unsigned long appGetLocalIP( void )
 {
 	static unsigned long LocalIP = 0;
-	struct hostent *Hostinfo;
-	char Hostname[256];
 
 	if( LocalIP==0 )
 	{
+#ifdef PLATFORM_DREAMCAST
+		// Initialize network stats to ensure net_default_dev is set
+		net_ipv4_get_stats();
+		if( net_default_dev )
+		{
+			// Build IP from net_default_dev->ip_addr[0..3]
+			LocalIP = (net_default_dev->ip_addr[0] << 0) |
+			          (net_default_dev->ip_addr[1] << 8) |
+			          (net_default_dev->ip_addr[2] << 16) |
+			          (net_default_dev->ip_addr[3] << 24);
+		}
+		else
+		{
+			// No network device available, use loopback
+			LocalIP = 0x0100007F; // 127.0.0.1 in network byte order
+		}
+#else
+		struct hostent *Hostinfo;
+		char Hostname[256];
 		gethostname( Hostname, sizeof(Hostname) );
 		Hostinfo = gethostbyname( Hostname );
-		LocalIP = *(unsigned long*)Hostinfo->h_addr_list[0];
+		if( Hostinfo && Hostinfo->h_addr_list[0] )
+			LocalIP = *(unsigned long*)Hostinfo->h_addr_list[0];
+#endif
 	}
 	
 	return LocalIP;

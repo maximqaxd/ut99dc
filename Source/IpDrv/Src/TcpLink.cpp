@@ -322,7 +322,7 @@ ATcpLink::CheckConnectionQueue()
 		// debugf( NAME_Log, "CheckConnectionQueue: No connections waiting." );
 		return;
 	}
-	size_t i = sizeof(SOCKADDR);
+	socklen_t i = sizeof(SOCKADDR_IN);
 	NewSocket = accept( Socket, (SOCKADDR*) &ForeignHost, &i );
 	if ( NewSocket == INVALID_SOCKET ) {
 		debugf( NAME_Log, TEXT("CheckConnectionQueue: Failed to accept queued connection: %i"), WSAGetLastError() );

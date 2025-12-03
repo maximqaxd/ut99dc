@@ -54,6 +54,9 @@ public:
 	{
 		guard(FMallocAnsi::DumpAllocs);
 		debugf( NAME_Exit, TEXT("Allocation checking disabled") );
+#ifdef PLATFORM_DREAMCAST
+	malloc_stats();
+#endif
 		unguard;
 	}
 	void HeapCheck()

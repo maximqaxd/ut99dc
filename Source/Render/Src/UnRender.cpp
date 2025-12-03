@@ -92,8 +92,13 @@ void URender::Init( UEngine* InEngine )
 	guard(URender::Init);
 
 	// Init subsystems.
+#ifdef PLATFORM_LOW_MEMORY
+	GDynMem.Init( 32768 );
+	GSceneMem.Init( 32768 );
+#else
 	GDynMem.Init( 65536 );
 	GSceneMem.Init( 32768 );
+#endif
 
 	// Call base.
 	URenderBase::Init( InEngine );
@@ -1443,8 +1448,11 @@ FSceneNode* URender::CreateChildFrame
 /*-----------------------------------------------------------------------------
 	World polygon rasterizer.
 -----------------------------------------------------------------------------*/
-
+#ifdef PLATFORM_DREAMCAST
+FRasterSpan HackRaster[480];//max y res 480!!
+#else
 FRasterSpan HackRaster[2880];//max y res!!
+#endif
 INT RasterStartY, RasterEndY, RasterStartX, RasterEndX;
 static UBOOL SetupRaster( FTransform** Pts, INT NumPts, FSpanBuffer* Span, INT EndY )
 {
@@ -1469,12 +1477,12 @@ static UBOOL SetupRaster( FTransform** Pts, INT NumPts, FSpanBuffer* Span, INT E
 	}
 	if( RasterStartY<0 || RasterEndY>EndY )
 	{
-		RasterStartY = Clamp( RasterStartY, 0, EndY );
-		RasterEndY   = Clamp( RasterEndY,   0, EndY );
+		RasterStartY = Clamp<INT>( RasterStartY, 0, EndY );
+		RasterEndY   = Clamp<INT>( RasterEndY,   0, EndY );
 		for( INT i=0; i<NumPts; i++ )
 		{
-			Pts[i]->IntY    = Clamp( Pts[i]->IntY, 0, EndY );
-			Pts[i]->ScreenY = Clamp( Pts[i]->IntY, 0, EndY );
+			Pts[i]->IntY    = Clamp<INT>( Pts[i]->IntY, 0, EndY );
+			Pts[i]->ScreenY = Clamp<INT>( Pts[i]->IntY, 0, EndY );
 		}
 	}
 
@@ -1810,10 +1818,10 @@ UBOOL URender::BoundVisible
 		if      ( BoxY < BoxMinY ) BoxMinY = BoxY;
 		else if ( BoxY > BoxMaxY ) BoxMaxY = BoxY;
 	}
-	Result.MinX  = ::Max(BoxMinX,0);
-	Result.MinY  = ::Max(BoxMinY,0);
-	Result.MaxX  = ::Min(BoxMaxX,Frame->X);
-	Result.MaxY  = ::Min(BoxMaxY,Frame->Y);
+	Result.MinX  = ::Max<INT>(BoxMinX,0);
+	Result.MinY  = ::Max<INT>(BoxMinY,0);
+	Result.MaxX  = ::Min<INT>(BoxMaxX,Frame->X);
+	Result.MaxY  = ::Min<INT>(BoxMaxY,Frame->Y);
 	Result.MinZ  = ::Max( BoxMinZ, 0.f );
 	if( !SpanBuffer || SpanBuffer->BoxIsVisible( BoxMinX, BoxMinY, BoxMaxX, BoxMaxY ) )
 	{
@@ -3181,21 +3189,26 @@ void URender::DrawWorld( FSceneNode* Frame )
 		// Occlude and render all scene frames.
 		OccludeFrame( Frame );
 		DrawFrame( Frame );
-
-		// Have HUD draw the player's weapon on top (and any other overlays which should happen before screen flashes). 
-		AActor* Actor
-		= Frame->Viewport->Actor->bBehindView ? NULL 
-		: Frame->Viewport->Actor->ViewTarget ? Frame->Viewport->Actor->ViewTarget
-		: Frame->Viewport->Actor;
-		if
-		(	!GIsEditor
-		&&	Actor
-		&&	(Frame->Viewport->Actor->ShowFlags & SHOW_Actors) )
+	// Have HUD draw the player's weapon on top (and any other overlays which should happen before screen flashes). 
+	AActor* Actor
+	= Frame->Viewport->Actor->bBehindView ? NULL 
+	: Frame->Viewport->Actor->ViewTarget ? Frame->Viewport->Actor->ViewTarget
+	: Frame->Viewport->Actor;
+	if
+	(	!GIsEditor
+	&&	Actor
+	&&	(Frame->Viewport->Actor->ShowFlags & SHOW_Actors) )
+	{
+		// WORKAROUND: Skip RenderOverlays if Actor or Canvas is invalid
+		// This happens on Dreamcast due to GCC/MSVC bitfield differences
+		if( Actor && Actor->GetClass() && Frame->Viewport->Canvas && Frame->Viewport->Canvas->GetClass() )
 		{
 			GUglyHackFlags|=1;
 			Actor->eventRenderOverlays(Frame->Viewport->Canvas);
 			GUglyHackFlags&=~1;
 		}
+	}
+
 	}
 	catch (...)
 	{

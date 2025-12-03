@@ -231,7 +231,11 @@ public:
 	{
 		guard(FFileManagerLinux::CreateFileWriter);
 		if( Flags & FILEWRITE_EvenIfReadOnly )
+		{
+#ifndef PLATFORM_DREAMCAST
 			chmod(TCHAR_TO_ANSI(Filename), S_IRUSR | S_IWUSR);
+#endif
+		}
 		if( (Flags & FILEWRITE_NoReplaceExisting) && FileSize(Filename)>=0 )
 			return NULL;
 		const TCHAR* Mode = (Flags & FILEWRITE_Append) ? TEXT("ab") : TEXT("wb"); 
@@ -251,7 +255,11 @@ public:
 	{
 		guard(FFileManagerLinux::Delete);
 		if( EvenReadOnly )
+		{
+#ifndef PLATFORM_DREAMCAST
 			chmod(TCHAR_TO_ANSI(Filename), S_IRUSR | S_IWUSR);
+#endif
+		}
 		return unlink(TCHAR_TO_ANSI(Filename))==0 || (errno==ENOENT && !RequireExists);
 		unguard;
 	}

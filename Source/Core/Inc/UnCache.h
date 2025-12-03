@@ -138,7 +138,11 @@ public:
 
 private:
 	// Constants.
+#ifdef PLATFORM_LOW_MEMORY
+	enum {HASH_COUNT=8192};
+#else
 	enum {HASH_COUNT=16384};
+#endif
 	enum {IGNORE_SIZE=256};
 
 	// Variables.

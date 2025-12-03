@@ -34,7 +34,7 @@
 // for the list; must call spanAllocLinear to allocate the proper amount of memory
 // for it.
 //
-void FSpanBuffer::AllocIndex( int AllocStartY, int AllocEndY, FMemStack* MemStack )
+void FSpanBuffer::AllocIndex( INT AllocStartY, INT AllocEndY, FMemStack* MemStack )
 {
     guard(FSpanBuffer::AllocIndex);
 

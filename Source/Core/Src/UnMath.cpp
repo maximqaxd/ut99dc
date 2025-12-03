@@ -20,13 +20,20 @@ FGlobalMath::FGlobalMath()
 	ViewCoords			(FVector(0,0,0),FVector(0,1,0),FVector(0,0,-1),FVector(1,0,0)),
 	UnitScale			(FVector(1,1,1),0.0,SHEER_ZX)
 {
+#ifndef PLATFORM_LOW_MEMORY
 	// Init base angle table.
-	{for( INT i=0; i<NUM_ANGLES; i++ )
-		TrigFLOAT[i] = appSin((FLOAT)i * 2.0 * PI / (FLOAT)NUM_ANGLES);}
+	int i;
+	for( i=0; i<NUM_ANGLES; i++ )
+		TrigFLOAT[i] = appSin((FLOAT)i * 2.0 * PI / (FLOAT)NUM_ANGLES);
 
 	// Init square root table.
-	{for( INT i=0; i<NUM_SQRTS; i++ )
-		SqrtFLOAT[i] = appSqrt((FLOAT)i / 16384.0);}
+	for( i=0; i<NUM_SQRTS; i++ )
+	{
+		FLOAT S				= appSqrt((FLOAT)(i+1) * (1.0/(FLOAT)NUM_SQRTS));
+		FLOAT Temp			= (1.0-S);// Was (2*S*S*S-3*S*S+1);
+		SqrtFLOAT[i]		= appSqrt((FLOAT)i / 16384.0);
+	}
+#endif
 }
 
 /*-----------------------------------------------------------------------------

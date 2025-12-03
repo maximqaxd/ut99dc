@@ -17,10 +17,16 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE UNREAL_EXPORTS UPACKAGE_NAME=${PROJECT_NAME})
 
+# Select the appropriate viewport / window driver
 if(USE_SDL)
+  # SDL / NSDLDrv path (POSIX/Windows with SDL2)
   target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY} NSDLDrv)
   target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIR})
+elseif(TARGET_IS_DREAMCAST)
+  # Native Dreamcast driver (KOSDrv) – added from the top‑level CMakeLists
+  target_link_libraries(${PROJECT_NAME} KOSDrv)
 else()
+  # Non‑Windows, non‑Dreamcast platforms currently only support the SDL path
   message(FATAL_ERROR "Platforms other than Windows and Dreamcast can only use NSDLDrv.")
 endif()
 

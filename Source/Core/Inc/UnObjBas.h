@@ -47,6 +47,7 @@ enum EPackageFlags
 //
 enum ENativeConstructor    {EC_NativeConstructor};
 enum EInternal             {EC_Internal};
+enum ENoInitConstructor    {EC_NoInitConstructor};
 enum ECppProperty          {EC_CppProperty};
 enum EInPlaceConstructor   {EC_InPlaceConstructor};
 
@@ -303,6 +304,7 @@ public: \
 	static void InternalConstructor( void* X ) \
 		{ new( (EInternal*)X )TClass(); } \
 
+
 // Declare an abstract class.
 #define DECLARE_ABSTRACT_CLASS( TClass, TSuperClass, TStaticFlags ) \
 	DECLARE_BASE_CLASS( TClass, TSuperClass, TStaticFlags | CLASS_Abstract ) \
@@ -333,7 +335,8 @@ public: \
 			(void(*)(void*))TClass::InternalConstructor, \
 			(void(UObject::*)())&TClass::StaticConstructor \
 		); \
-		DLL_EXPORT UClass* autoclass##TClass = TClass::StaticClass();
+		DLL_EXPORT UClass* autoclass##TClass = TClass::StaticClass(); \
+		STATIC_EXPORT( TClass, autoclass##TClass )
 
 // Define the package of the current DLL being compiled.
 	#define IMPLEMENT_PACKAGE(pkg) \

@@ -97,8 +97,11 @@ void UEngine::Init()
 	// Subsystems.
 	FURL::StaticInit();
 	GEngineMem.Init( 65536 );
-	GCache.Init( 1024 * 1024 * Clamp(GIsClient ? CacheSizeMegs : 1,1,1024), 4096 );
-
+#ifdef PLATFORM_DREAMCAST
+	GCache.Init( 1024 * 256, 2048 );
+#else
+	GCache.Init( 1024 * 1024 * Clamp<INT>( GIsClient ? CacheSizeMegs : 1, 1, 1024 ), 4096 );
+#endif
 	// Translation.
 	YesKey = appToUpper( *Localize( "General", "Yes", TEXT("Core") ) );
 	NoKey  = appToUpper( *Localize( "General", "No",  TEXT("Core") ) );

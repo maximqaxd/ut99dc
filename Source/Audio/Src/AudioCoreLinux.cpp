@@ -19,7 +19,9 @@ Revision history:
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef PLATFORM_DREAMCAST
 #include <linux/soundcard.h>
+#endif
 #include "AudioPrivate.h"
 
 /*------------------------------------------------------------------------------------
@@ -43,6 +45,7 @@ void* GetAudioBuffer()
 
 INT OpenAudio( DWORD Rate, INT OutputMode, INT Latency )
 {
+#ifndef PLATFORM_DREAMCAST
 	// Open the audio device.
 	AudioDevice = open("/dev/dsp", O_WRONLY | O_NONBLOCK, 0);
 
@@ -120,7 +123,7 @@ INT OpenAudio( DWORD Rate, INT OutputMode, INT Latency )
 	// Initialize AudioBuffer.
 	debugf( NAME_Init, TEXT("Allocating an audio buffer of %i bytes."), BufferSize );
 	AudioBuffer = (BYTE*) appMalloc( BufferSize, TEXT("Audio Buffer") );
-
+#endif
 	return 1;
 }
 

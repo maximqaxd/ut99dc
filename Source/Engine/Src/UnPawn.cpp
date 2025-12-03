@@ -644,7 +644,7 @@ void APawn::execFindStairRotation( FFrame& Stack, RESULT_DECL )
 			{
 				Spot = EyeSpot + Dist * Dir;
 				GetLevel()->SingleLineCheck(Hit, this, Spot - FVector(0,0,Down), Spot, TRACE_VisBlocking, CollisionSlice);
-				stairRot = ::Max(0, ViewRotation.Pitch);
+				stairRot = ::Max<INT>(0, ViewRotation.Pitch);
 				if ( Down * Hit.Time < firstDown - 10 ) 
 					stairRot = 5400;
 			}
@@ -655,7 +655,7 @@ void APawn::execFindStairRotation( FFrame& Stack, RESULT_DECL )
 				{
 					Spot = EyeSpot + Dist * Dir;
 					GetLevel()->SingleLineCheck(Hit, this, Spot - FVector(0,0,Down), Spot, TRACE_VisBlocking, CollisionSlice);
-					stairRot = Min(0, ViewRotation.Pitch);
+					stairRot = Min<INT>(0, ViewRotation.Pitch);
 					if (Down * Hit.Time > firstDown + 10)
 						stairRot = -5000;
 				}

@@ -275,7 +275,7 @@ int FPoly::SplitWithNode
 	INT				iNode,
 	FPoly			*FrontPoly,
 	FPoly			*BackPoly,
-	INT				VeryPrecise
+	int				VeryPrecise
 ) const
 {
 	guard(FPoly::SplitWithNode);
@@ -479,7 +479,7 @@ void FPoly::Transform
 // Remove colinear vertices and check convexity.  Returns 1 if convex, 0 if
 // nonconvex or collapsed.
 //
-INT FPoly::RemoveColinears()
+int FPoly::RemoveColinears()
 {
 	guard(FPoly::RemoveColinears);
 

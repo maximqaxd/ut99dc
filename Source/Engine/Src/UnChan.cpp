@@ -146,7 +146,7 @@ INT UChannel::MaxSendBytes()
 	-	Connection->Out.GetNumBits()
 	-	MAX_PACKET_TRAILER_BITS
 	-	MAX_BUNCH_HEADER_BITS;
-	return Max( 0, ResultBits/8 );
+	return Max<INT>( 0, ResultBits/8 );
 	unguard;
 }
 

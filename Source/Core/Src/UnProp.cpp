@@ -139,6 +139,7 @@ void UProperty::Serialize( FArchive& Ar )
 //
 void UProperty::ExportCpp( FOutputDevice& Out, UBOOL IsLocal, UBOOL IsParm ) const
 {
+#ifndef PLATFORM_LOW_MEMORY
 	guard(UProperty::ExportCpp)
 	TCHAR ArrayStr[80] = TEXT("");
 	if
@@ -179,6 +180,7 @@ void UProperty::ExportCpp( FOutputDevice& Out, UBOOL IsLocal, UBOOL IsParm ) con
 			Out.Logf( TEXT(" %s%s"), GetName(), ArrayStr );
 	}
 	unguardobj;
+#endif
 }
 
 //
@@ -477,7 +479,14 @@ void UBoolProperty::Serialize( FArchive& Ar )
 	guard(UBoolProperty::Serialize);
 	Super::Serialize( Ar );
 	if( !Ar.IsLoading() && !Ar.IsSaving() )
-		Ar << BitMask;
+	{
+		// Transactional archives: serialize the bitmask as a DWORD to avoid
+		// overload ambiguity with BITFIELD on some compilers.
+		DWORD Mask = BitMask;
+		Ar << Mask;
+		if( Ar.IsLoading() )
+			BitMask = Mask;
+	}
 	unguardobj;
 }
 void UBoolProperty::ExportCppItem( FOutputDevice& Out ) const

@@ -7,7 +7,16 @@
 =============================================================================*/
 
 #include "CorePrivate.h"
-
+// maximqad:: remove that when zeroing on actor construct is fixed
+static UProperty* FindRoleProperty( UClass* InClass )
+{
+	for( UProperty* Prop = InClass ? InClass->PropertyLink : NULL; Prop; Prop = Prop->PropertyLinkNext )
+	{
+		if( appStricmp( Prop->GetName(), TEXT("Role") ) == 0 )
+			return Prop;
+	}
+	return NULL;
+}
 /*-----------------------------------------------------------------------------
 	Globals.
 -----------------------------------------------------------------------------*/
@@ -34,8 +43,9 @@ TArray<FRegistryObjectInfo> UObject::GObjDrivers;
 TMultiMap<FName,FName>*		UObject::GObjPackageRemap;
 static INT GGarbageRefCount=0;
 
+
 /*-----------------------------------------------------------------------------
-	UObject constructors.
+   UObject constructors.
 -----------------------------------------------------------------------------*/
 
 UObject::UObject()
@@ -596,6 +606,11 @@ void UObject::ExportProperties
 void UObject::InitExecution()
 {
 	guard(UObject::InitExecution);
+	if( GetClass()==NULL )
+	{
+		printf("[ROLE DBG] InitExecution class null object=%p name=%s\n", this, TCHAR_TO_ANSI(GetName()));
+		fflush(stdout);
+	}
 	check(GetClass()!=NULL);
 
 	if( StateFrame )
@@ -721,7 +736,10 @@ UFunction* UObject::FindFunctionChecked( FName InName, UBOOL Global )
 		return NULL;
 	UFunction* Result = Cast<UFunction>( FindObjectField( InName, Global ) );
 	if( !Result )
+	{
+		debugf(TEXT("DEBUG: FindFunctionChecked: InName='%s' (%d), Global=%d, GetFullName()='%s'"), *InName, InName.GetIndex(), Global, GetFullName());
 		appErrorf( TEXT("Failed to find function %s in %s"), *InName, GetFullName() );
+	}
 	return Result;
 	unguardfSlow(( TEXT("%s (function %s)"), GetFullName(), *InName ));
 }
@@ -940,7 +958,11 @@ void UObject::ResetConfig( UClass* Class )
 		SrcFilename = TEXT("DefUser.ini");
 	else
 		return;
+#ifdef PLATFORM_DREAMCAST
+	TCHAR Buffer[8192];
+#else
 	TCHAR Buffer[32767];
+#endif
 	if( GConfig->GetSection( Class->GetPathName(), Buffer, ARRAY_COUNT(Buffer), SrcFilename  ) )
 	{
 		TCHAR* NewKey;
@@ -3169,15 +3191,67 @@ UObject* UObject::StaticConstructObject
 	guard(UObject::StaticConstructObject);
 	check(Error);
 
+	// maximqad: figure out how to fix zeroing on player actor 
+#if 1
 	// Allocate the object.
 	UObject* Result = StaticAllocateObject( InClass, InOuter, InName, InFlags, InTemplate, Error );
 	if( Result )
-		(*InClass->ClassConstructor)( Result );
-	return Result;
+	{
+		// STUPID HACK: 
+		// For Actor classes (detected by Role property), save and restore initialized data around constructor.
+		UProperty* RoleProp = FindRoleProperty( InClass );
+		if( RoleProp )
+		{
+			// Save UObject header fields
+			INT SavedIndex = Result->Index;
+			UClass* SavedClass = Result->Class;
+			UObject* SavedOuter = Result->Outer;
+			FName SavedName = Result->Name;
+			DWORD SavedFlags = Result->ObjectFlags;
 
+			// Save ALL actor data (everything after UObject header)
+			INT StartOffset = sizeof(UObject);
+			INT ActorDataSize = InClass->GetPropertiesSize() - StartOffset;
+			BYTE* SavedActorData = NULL;
+
+			if( ActorDataSize > 0 )
+			{
+				SavedActorData = (BYTE*)appMalloc(ActorDataSize, TEXT("SavedActorData"));
+				appMemcpy(SavedActorData, (BYTE*)Result + StartOffset, ActorDataSize);
+			}
+
+			(*InClass->ClassConstructor)( Result );
+
+			// Restore UObject header fields
+			Result->Index = SavedIndex;
+			Result->Class = SavedClass;
+			Result->Outer = SavedOuter;
+			Result->Name = SavedName;
+			Result->ObjectFlags = SavedFlags;
+
+			// Restore ALL actor data
+			if( ActorDataSize > 0 && SavedActorData )
+			{
+				appMemcpy((BYTE*)Result + StartOffset, SavedActorData, ActorDataSize);
+				appFree(SavedActorData);
+			}
+		}
+		else
+		{
+			// Not an Actor - just call the constructor normally
+			(*InClass->ClassConstructor)( Result );
+		}
+	}
+	return Result;
+#else
+		// Allocate the object.
+		UObject* Result = StaticAllocateObject( InClass, InOuter, InName, InFlags, InTemplate, Error );
+		if( Result )
+			(*InClass->ClassConstructor)( Result );
+		return Result;
+#endif
 	unguard;
 }
-
 /*-----------------------------------------------------------------------------
    Garbage collection.
 -----------------------------------------------------------------------------*/
@@ -3446,7 +3520,11 @@ void UObject::ParseParms( const TCHAR* Parms )
 void UObject::CacheDrivers( UBOOL ForceRefresh )
 {
 	guard(UObject::CacheDrivers);
+#ifdef PLATFORM_DREAMCAST
+	TCHAR Buffer[8192];
+#else
 	TCHAR Buffer[32767];
+#endif
 	if( ForceRefresh || appStricmp(GObjCachedLanguage,UObject::GetLanguage())!=0 )
 	{
 		appStrcpy( GObjCachedLanguage, UObject::GetLanguage() );

@@ -95,6 +95,7 @@ void* DoSound(void* Arguments)
 	AUnlock;
 	
 	ExitAudioThread(&MixingThread);
+	return NULL;
 }
 
 // Mixes an 8 bit unsigned voice into 16 bit signed output.

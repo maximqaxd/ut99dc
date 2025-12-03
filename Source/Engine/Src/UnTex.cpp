@@ -94,7 +94,7 @@ void UTexture::Lock( FTextureInfo& TextureInfo, DOUBLE CurrentTime, INT LOD, URe
 		if( RenDev )
 			LOD = Max(LOD,RenDev->RecommendedLOD);
 	}
-	LOD = TextureInfo.LOD = Min(LOD,Min(WhichMips.Num()-1,MAX_TEXTURE_LOD-1));
+	LOD = TextureInfo.LOD = Min<INT>( LOD, Min<INT>(WhichMips.Num()-1,MAX_TEXTURE_LOD-1) );
 
 	// Set locked texture info.
 	TextureInfo.Texture         = this;
@@ -307,8 +307,13 @@ static void SerializeMips( UTexture* Texture, FArchive& Ar, TArray<FMipmap>& Mip
 		for( INT i=0; i<NewNum; i++ )
 		{
 			UBOOL SavedLazyLoad = GLazyLoad;
+#ifdef PLATFORM_LOW_MEMORY
+			// Force lazy load for all mips on low memory platforms
+			GLazyLoad = 1;
+#else
 			if( i<LOD )
 				GLazyLoad = 1;
+#endif
 			Ar << *new(Mips)FMipmap;
 			GLazyLoad = SavedLazyLoad;
 		}
@@ -364,8 +369,8 @@ void UTexture::PostLoad()
 		for( INT i=0; i<256; i++ )
 			new(Palette->Colors)FColor(i,i,i,0);
 	}
-	UClamp = Clamp(UClamp,0,USize);
-	VClamp = Clamp(VClamp,0,VSize);
+	UClamp = Clamp<INT>( UClamp, 0, USize );
+	VClamp = Clamp<INT>( VClamp, 0, VSize );
 
 	// Init animation.
 	Accumulator = 0;
@@ -417,6 +422,8 @@ void UTexture::Init( INT InUSize, INT InVSize )
 //
 void UTexture::CreateMips( UBOOL FullMips, UBOOL Downsample )
 {
+#ifndef PLATFORM_LOW_MEMORY
+
 	guard(UTexture::CreateMips);
 
 	check(Palette!=NULL);
@@ -553,6 +560,7 @@ void UTexture::CreateMips( UBOOL FullMips, UBOOL Downsample )
 		}
 	}
 	unguardobj;
+#endif
 }
 
 //

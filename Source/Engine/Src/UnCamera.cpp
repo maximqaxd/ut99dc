@@ -506,7 +506,7 @@ UBOOL UViewport::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 		{
 			if( !Driver->ServerConnection->URL.HasOption(TEXT("LAN")) )
 			{
-				CurrentNetSpeed = Driver->ServerConnection->CurrentNetSpeed = Clamp( Rate, 500, Driver->MaxClientRate );
+				CurrentNetSpeed = Driver->ServerConnection->CurrentNetSpeed = Clamp<INT>( Rate, 500, Driver->MaxClientRate );
 				Driver->ServerConnection->Logf( TEXT("NETSPEED %i"), Rate );
 			}
 		}
@@ -522,7 +522,7 @@ UBOOL UViewport::Exec( const TCHAR* Cmd, FOutputDevice& Ar )
 		{
 			if( Driver->ServerConnection->URL.HasOption(TEXT("LAN")) )
 			{
-				CurrentNetSpeed = Driver->ServerConnection->CurrentNetSpeed = Clamp( Rate, 500, Driver->MaxClientRate );
+				CurrentNetSpeed = Driver->ServerConnection->CurrentNetSpeed = Clamp<INT>( Rate, 500, Driver->MaxClientRate );
 				Driver->ServerConnection->Logf( TEXT("NETSPEED %i"), Rate );
 			}
 		}

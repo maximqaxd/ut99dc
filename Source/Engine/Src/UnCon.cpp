@@ -132,7 +132,7 @@ void UConsole::PreRender( FSceneNode* Frame )
 		FLOAT Fraction = (FLOAT)(BorderSize-1) / (FLOAT)(MAX_BORDER-1);
 
 		BorderLines = (int)Min((FLOAT)Frame->Y * 0.25f * Fraction,(FLOAT)Frame->Y);
-		BorderLines = ::Max(0,BorderLines);
+		BorderLines = ::Max<INT>(0,BorderLines);
 		Frame->Y -= 2 * BorderLines;
 
 		BorderPixels = (int)Min((FLOAT)Frame->X * 0.25f * Fraction,(FLOAT)Frame->X) & ~3;

@@ -284,9 +284,9 @@ CORE_API INT appStrncmp( const TCHAR* String1, const TCHAR* String2, INT Count )
 CORE_API TCHAR* appStaticString1024();
 CORE_API ANSICHAR* appAnsiStaticString1024();
 
-CORE_API const TCHAR* appSpc( int Num );
-CORE_API TCHAR* appStrncpy( TCHAR* Dest, const TCHAR* Src, int Max);
-CORE_API TCHAR* appStrncat( TCHAR* Dest, const TCHAR* Src, int Max);
+CORE_API const TCHAR* appSpc( INT Num );
+CORE_API TCHAR* appStrncpy( TCHAR* Dest, const TCHAR* Src, INT Max);
+CORE_API TCHAR* appStrncat( TCHAR* Dest, const TCHAR* Src, INT Max);
 CORE_API TCHAR* appStrupr( TCHAR* String );
 CORE_API const TCHAR* appStrfind(const TCHAR* Str, const TCHAR* Find);
 CORE_API DWORD appStrCrc( const TCHAR* Data );
@@ -304,7 +304,7 @@ CORE_API INT appSprintf( TCHAR* Dest, const TCHAR* Fmt, ... );
 	#include <stdarg.h>
 #endif
 
-typedef int QSORT_RETURN;
+typedef INT QSORT_RETURN;
 typedef QSORT_RETURN(CDECL* QSORT_COMPARE)( const void* A, const void* B );
 CORE_API void appQsort( void* Base, INT Num, INT Width, QSORT_COMPARE Compare );
 
@@ -399,27 +399,52 @@ CORE_API UBOOL appSaveStringToFile( const FString& String, const TCHAR* Filename
 	Memory functions.
 -----------------------------------------------------------------------------*/
 
-CORE_API void* appMemmove( void* Dest, const void* Src, INT Count );
 CORE_API INT appMemcmp( const void* Buf1, const void* Buf2, INT Count );
 CORE_API UBOOL appMemIsZero( const void* V, int Count );
 CORE_API DWORD appMemCrc( const void* Data, INT Length, DWORD CRC=0 );
 CORE_API void appMemswap( void* Ptr1, void* Ptr2, DWORD Size );
+CORE_API void appMemzero( void* Dest, INT Count );
+#ifdef PLATFORM_DREAMCAST
+#define appMemmove memmove
+#define appMemset memset
+#define appMemcpy memcpy
+#else
+CORE_API void* appMemmove( void* Dest, const void* Src, INT Count );
 CORE_API void appMemset( void* Dest, INT C, INT Count );
-
-#ifndef DEFINED_appMemcpy
 CORE_API void appMemcpy( void* Dest, const void* Src, INT Count );
 #endif
-
-#ifndef DEFINED_appMemzero
-CORE_API void appMemzero( void* Dest, INT Count );
-#endif
-
 //
 // C style memory allocation stubs.
 //
-#define appMalloc     GMalloc->Malloc
-#define appFree       GMalloc->Free
-#define appRealloc    GMalloc->Realloc
+// Forward declare MallocError from Core.cpp
+extern CORE_API FMalloc& GetMallocError();
+
+inline void* appMalloc( DWORD Count, const TCHAR* Tag )
+{
+	// If GMalloc is still the error allocator, use system malloc
+	if( GMalloc == &GetMallocError() )
+		return malloc(Count);
+	return GMalloc->Malloc(Count, Tag);
+}
+
+inline void appFree( void* Original )
+{
+	// If GMalloc is still the error allocator, use system free
+	if( GMalloc == &GetMallocError() )
+	{
+		if(Original) free(Original);
+		return;
+	}
+	GMalloc->Free(Original);
+}
+
+inline void* appRealloc( void* Original, DWORD Count, const TCHAR* Tag )
+{
+	// If GMalloc is still the error allocator, use system realloc
+	if( GMalloc == &GetMallocError() )
+		return realloc(Original, Count);
+	return GMalloc->Realloc(Original, Count, Tag);
+}
 
 //
 // C++ style memory allocation.

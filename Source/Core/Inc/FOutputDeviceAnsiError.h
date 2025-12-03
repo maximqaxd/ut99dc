@@ -6,6 +6,11 @@
 		* Created by Tim Sweeney
 =============================================================================*/
 
+#ifdef PLATFORM_DREAMCAST
+// Forward declaration for Dreamcast fatal error handler
+extern void FatalError( const char* Fmt, ... ) __attribute__((noreturn));
+#endif
+
 //
 // ANSI stdout output device.
 //
@@ -28,7 +33,15 @@ public:
 	{}
 	void Serialize( const TCHAR* Msg, enum EName Event )
 	{
-#ifdef _DEBUG
+#ifdef PLATFORM_DREAMCAST
+		// Dreamcast: Don't use exceptions, just print and halt
+		GIsCriticalError = 1;
+		printf("[CRITICAL ERROR] %s\n", Msg);
+		fflush(stdout);
+		UObject::StaticShutdownAfterError();
+		appStrncpy( GErrorHist, Msg, ARRAY_COUNT(GErrorHist) );
+		FatalError( "FATAL ERROR:\n%s", GErrorHist );
+#elif defined(_DEBUG)
 		// Just display info and break the debugger.
   		debugf( NAME_Critical, TEXT("appError called while debugging:") );
 		debugf( NAME_Critical, Msg );
@@ -70,6 +83,17 @@ public:
 	}
 	void HandleError()
 	{
+#ifdef PLATFORM_DREAMCAST
+		GIsGuarded       = 0;
+		GIsRunning       = 0;
+		GIsCriticalError = 1;
+		GLogHook         = NULL;
+		UObject::StaticShutdownAfterError();
+		GErrorHist[ErrorType==NAME_FriendlyError ? ErrorPos : ARRAY_COUNT(GErrorHist)-1]=0;
+		LocalPrint( GErrorHist );
+		LocalPrint( TEXT("\n\nExiting due to error\n") );
+		FatalError( "HandleError: %s", GErrorHist );
+#else
 		try
 		{
 			GIsGuarded       = 0;
@@ -83,6 +107,7 @@ public:
 		}
 		catch( ... )
 		{}
+#endif
 	}
 };
 

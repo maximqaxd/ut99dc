@@ -265,7 +265,26 @@ void UNSDLViewport::OpenWindow( DWORD InParentWindow, UBOOL Temporary, INT NewX,
 	UBOOL DoOpenGL=0;
 	UBOOL NoHard=ParseParam( appCmdLine(), "nohard" );
 	SDL_GLprofile GLProfile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+
+	// Clamp invalid sizes – SDL textures can't be 0x0
+	// If no size specified, try to read from config
+	if( NewX <= 0 || NewY <= 0 )
+	{
+		if( !Temporary && !GIsEditor )
+		{
+			// Try to get windowed viewport size from config
+			INT ConfigX = 0, ConfigY = 0;
+			if( GConfig->GetInt( TEXT("NSDLDrv.NSDLClient"), TEXT("WindowedViewportX"), ConfigX ) && ConfigX > 0 )
+				NewX = ConfigX;
+			if( GConfig->GetInt( TEXT("NSDLDrv.NSDLClient"), TEXT("WindowedViewportY"), ConfigY ) && ConfigY > 0 )
+				NewY = ConfigY;
+		}
+		// Final fallback
+		if( NewX <= 0 ) NewX = 320;
+		if( NewY <= 0 ) NewY = 240;
+	}
 	NewX = Align(NewX,4);
+	debugf( NAME_Log, TEXT("OpenWindow: NewX=%d, NewY=%d"), NewX, NewY );
 
 	if( !Temporary && !GIsEditor && !NoHard )
 	{
@@ -613,7 +632,7 @@ void UNSDLViewport::Unlock( UBOOL Blit )
 	{
 		if( GLCtx )
 		{
-			// Flip OpenGL buffers.
+
 			SDL_GL_SwapWindow( hWnd );
 		}
 		else if( SDLRen && SDLTex )
@@ -662,7 +681,7 @@ void UNSDLViewport::Repaint( UBOOL Blit )
 {
 	guard(UNSDLViewport::Repaint);
 	if( HoldCount == 0 && RenDev && SizeX && SizeY )
-		Client->Engine->Draw( this, 0 );
+		Client->Engine->Draw( this, Blit );
 	unguard;
 }
 
@@ -672,6 +691,10 @@ void UNSDLViewport::Repaint( UBOOL Blit )
 void UNSDLViewport::SetClientSize( INT NewX, INT NewY, UBOOL UpdateProfile )
 {
 	guard(UNSDLViewport::SetClientSize);
+
+	// Guard against zero/negative sizes.
+	if( NewX <= 0 ) NewX = 320;
+	if( NewY <= 0 ) NewY = 240;
 
 	if( hWnd )
 	{

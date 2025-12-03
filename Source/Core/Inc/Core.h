@@ -356,6 +356,7 @@ extern "C" DLL_EXPORT char THIS_PACKAGE[];
 #include "UnTemplate.h"     // Dynamic arrays.
 #include "UnName.h"			// Global name subsystem.
 #include "UnStack.h"		// Script stack definition.
+#include "UnStaticExports.h" // Package exports for static builds.
 #include "UnObjBas.h"		// Object base class.
 #include "UnCoreNet.h"		// Core networking.
 #include "UnCorObj.h"		// Core object class definitions.

@@ -187,7 +187,7 @@ CORE_API UBOOL appMemIsZero( const void* V, int Count )
 	return 1;
 	unguardSlow;
 }
-
+#ifndef PLATFORM_DREAMCAST
 CORE_API void* appMemmove( void* Dest, const void* Src, INT Count )
 {
 	return memmove( Dest, Src, Count );
@@ -197,7 +197,7 @@ CORE_API void appMemset( void* Dest, INT C, INT Count )
 {
 	memset( Dest, C, Count );
 }
-
+#endif
 #ifndef DEFINED_appMemzero
 CORE_API void appMemzero( void* Dest, INT Count )
 {
@@ -299,7 +299,7 @@ CORE_API TCHAR* appStrstr( const TCHAR* String, const TCHAR* Find )
 #endif
 }
 
-CORE_API TCHAR* appStrchr( const TCHAR* String, int c )
+CORE_API TCHAR* appStrchr( const TCHAR* String, INT c )
 {
 #if UNICODE
 	return (TCHAR*)wcschr( String, c );
@@ -398,9 +398,22 @@ CORE_API INT appStrnicmp( const TCHAR* A, const TCHAR* B, INT Count )
 	Sorting.
 -----------------------------------------------------------------------------*/
 
-CORE_API void appQsort( void* Base, INT Num, INT Width, int(CDECL *Compare)(const void* A, const void* B ) )
+#ifdef PLATFORM_DREAMCAST
+static QSORT_COMPARE GQsortCompare = nullptr;
+static int QsortWrapper( const void* A, const void* B )
 {
+	return (int)GQsortCompare(A, B);
+}
+#endif
+
+CORE_API void appQsort( void* Base, INT Num, INT Width, QSORT_COMPARE Compare )
+{
+#ifdef PLATFORM_DREAMCAST
+	GQsortCompare = Compare;
+	qsort( Base, Num, Width, QsortWrapper );
+#else
 	qsort( Base, Num, Width, Compare );
+#endif
 }
 
 /*-----------------------------------------------------------------------------

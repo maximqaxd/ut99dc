@@ -167,7 +167,7 @@ UBOOL AUdpLink::Tick( FLOAT DeltaTime, enum ELevelTick TickType )
 		{
 			BYTE Buffer[MAXRECVDATASIZE];
 			sockaddr_in FromAddr;
-			size_t FromSize = sizeof(FromAddr);
+			socklen_t FromSize = sizeof(FromAddr);
 			INT Count = recvfrom( GetSocket(), (char*)Buffer, ARRAY_COUNT(Buffer)-1, 0, (sockaddr*)&FromAddr, &FromSize );
 			if( Count!=SOCKET_ERROR )
 			{
@@ -228,7 +228,7 @@ void AUdpLink::execReadText( FFrame& Stack, RESULT_DECL )
 	{
 		BYTE Buffer[MAXRECVDATASIZE];
 		sockaddr_in FromAddr;
-		size_t FromSize = sizeof(FromAddr);
+		socklen_t FromSize = sizeof(FromAddr);
 		INT BytesReceived = recvfrom( (SOCKET)Socket, (char*)Buffer, sizeof(Buffer), 0, (sockaddr*)&FromAddr, &FromSize );
 		if( BytesReceived != SOCKET_ERROR )
 		{
@@ -264,8 +264,8 @@ void AUdpLink::execReadBinary( FFrame& Stack, RESULT_DECL )
 	if( GetSocket() )
 	{
 		sockaddr_in FromAddr;
-		size_t FromSize = sizeof(FromAddr);
-		INT BytesReceived = recvfrom( (SOCKET) Socket, (char*)B, Min(Count,255), 0, (sockaddr*)&FromAddr, &FromSize );
+		socklen_t FromSize = sizeof(FromAddr);
+		INT BytesReceived = recvfrom( (SOCKET) Socket, (char*)B, Min<INT>(Count,255), 0, (sockaddr*)&FromAddr, &FromSize );
 		if( BytesReceived != SOCKET_ERROR )
 		{
 			Addr->Addr = ntohl( FromAddr.sin_addr.s_addr );

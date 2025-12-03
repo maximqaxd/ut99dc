@@ -239,10 +239,10 @@ void inline UScriptedTexture::DrawTile( FLOAT X, FLOAT Y, FLOAT XL, FLOAT YL, FL
 		}
 	}
 
-	INT DX1 = Min( Max( appRound(X), 0 ), USize-1 );
+	INT DX1 = Min<INT>( Max<INT>( appRound(X), 0 ), USize-1 );
 	U += ((FLOAT)DX1 - X) * (UL/XL);
 	INT DX2 = Min( appRound(XL+X), USize-1 );
-	INT DY1 = Min( Max( appRound(Y), 0 ), VSize-1 );
+	INT DY1 = Min<INT>( Max<INT>( appRound(Y), 0 ), VSize-1 );
 	V += ((FLOAT)DY1 - Y) * (VL/YL);
 	INT DY2 = Min( appRound(YL+Y), VSize-1 );
 

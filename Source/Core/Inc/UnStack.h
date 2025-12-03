@@ -204,6 +204,7 @@ struct CORE_API FFrame : public FOutputDevice
 	// Constructors.
 	FFrame( UObject* InObject );
 	FFrame( UObject* InObject, UStruct* InNode, INT CodeOffset, void* InLocals );
+	virtual ~FFrame() {}
 
 	// Functions.
 	void Step( UObject* Context, RESULT_DECL );

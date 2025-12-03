@@ -69,8 +69,8 @@ void UGenericAudioSubsystem::PostEditChange()
 
 	// Validate configurable variables.
 	OutputRate      = Clamp(OutputRate,(BYTE)0,(BYTE)6);
-	Latency         = Clamp(Latency,10,250);
-	Channels 		= Clamp(Channels,0,MAX_EFFECTS_CHANNELS);
+	Latency         = Clamp<INT>(Latency,10,250);
+	Channels 		= Clamp<INT>(Channels,0,MAX_EFFECTS_CHANNELS);
 	DopplerSpeed    = Clamp(DopplerSpeed,1.f,100000.f);
 	AmbientFactor   = Clamp(AmbientFactor,0.f,10.f);
 	SetVolumes();
@@ -403,7 +403,7 @@ void UGenericAudioSubsystem::Update( FPointRegion Region, FCoords& Coords )
 	// Time passes...
 	DOUBLE DeltaTime = appSeconds() - LastTime;
 	LastTime += DeltaTime;
-	DeltaTime = Clamp( DeltaTime, 0.0, 1.0 );
+	DeltaTime = Clamp<DOUBLE>( DeltaTime, 0.0, 1.0 );
 
 	AActor *ViewActor = Viewport->Actor->ViewTarget?Viewport->Actor->ViewTarget:Viewport->Actor;
 
@@ -503,9 +503,9 @@ void UGenericAudioSubsystem::Update( FPointRegion Region, FCoords& Coords )
 				PanAngle *= Size / CenterDist;
 
 			// Compute panning and volume.
-			INT     SoundPan      = Clamp( (INT)(AUDIO_MAXPAN/2 + PanAngle*AUDIO_MAXPAN*7/8/PI), 0, AUDIO_MAXPAN );
+			INT     SoundPan      = Clamp<INT>( (INT)(AUDIO_MAXPAN/2 + PanAngle*AUDIO_MAXPAN*7/8/PI), 0, AUDIO_MAXPAN );
 			FLOAT   Attenuation = Clamp(1.0-Size/Playing.Radius,0.0,1.0);
-			INT     SoundVolume   = Clamp( (INT)(AUDIO_MAXVOLUME * Playing.Volume * Attenuation * EFFECT_FACTOR), 0, AUDIO_MAXVOLUME );
+			INT     SoundVolume   = Clamp<INT>( (INT)(AUDIO_MAXVOLUME * Playing.Volume * Attenuation * EFFECT_FACTOR), 0, AUDIO_MAXVOLUME );
 			if( ReverseStereo )
 				SoundPan = AUDIO_MAXPAN - SoundPan;
 			if( Location.Z<0.0 && UseSurround )

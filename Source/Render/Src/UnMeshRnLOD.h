@@ -321,7 +321,7 @@ void URender::DrawLodMesh
 						INT Count=1;
 						for( UTexture* Test=Tex->AnimNext; Test && Test!=Tex; Test=Test->AnimNext )
 							Count++;
-						INT Num = Clamp( appFloor(Owner->LifeFraction()*Count), 0, Count-1 );
+						INT Num = Clamp<INT>( appFloor(Owner->LifeFraction()*Count), 0, Count-1 );
 						while( Num-- > 0 )
 							Tex = Tex->AnimNext;
 						SavedNext         = Tex->AnimNext;//sort of a hack!!

@@ -291,7 +291,7 @@ void UObject::execArrayElement( FFrame& Stack, RESULT_DECL )
 		{
 			// Display out-of-bounds warning and continue on with index clamped to valid range.
 			Stack.Logf( TEXT("Accessed array out of bounds (%i/%i)"), Index, GProperty->ArrayDim );
-			Index = Clamp( Index, 0, GProperty->ArrayDim - 1 );
+			Index = Clamp<INT>( Index, 0, (INT)GProperty->ArrayDim - 1 );
 		}
 
 		// Update address.
@@ -328,7 +328,7 @@ void UObject::execDynArrayElement( FFrame& Stack, RESULT_DECL )
 		// Display out-of-bounds warning and continue on with index clamped to valid range.
 		//!!must work like null-context expressions.
 		Stack.Logf( TEXT("Accessed array out of bounds (%i/%i)"), Index, GProperty->ArrayDim );
-		Index = Clamp( Index, 0, Array->Num() - 1 );
+		Index = Clamp<INT>( Index, 0, (INT)Array->Num() - 1 );
 	}
 
 	// Add scaled offset to base pointer.
@@ -345,7 +345,12 @@ void UObject::execBoolVariable( FFrame& Stack, RESULT_DECL )
 
 	// Get bool variable.
 	BYTE B = *Stack.Code++;
+#ifdef PLATFORM_DREAMCAST
+	UBoolProperty* Property;
+	__builtin_memcpy( &Property, Stack.Code, sizeof( Property ) );
+#else
 	UBoolProperty* Property = *(UBoolProperty**)Stack.Code;
+#endif
 	(this->*GNatives[B])( Stack, NULL );
 	GProperty = Property;
 

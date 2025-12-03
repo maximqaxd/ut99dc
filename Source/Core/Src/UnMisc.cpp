@@ -35,19 +35,19 @@ void FOutputDevice::Log( enum EName Type, const FString& S )
 }
 void FOutputDevice::Logf( EName Event, const TCHAR* Fmt, ... )
 {
+	TCHAR TempStr[4096];
+	GET_VARARGS(TempStr,ARRAY_COUNT(TempStr),Fmt);
 	if( !FName::SafeSuppressed(Event) )
 	{
-		TCHAR TempStr[4096];
-		GET_VARARGS(TempStr,ARRAY_COUNT(TempStr),Fmt);
 		Serialize( TempStr, Event );
 	}
 }
 void FOutputDevice::Logf( const TCHAR* Fmt, ... )
 {
+	TCHAR TempStr[4096];
+	GET_VARARGS(TempStr,ARRAY_COUNT(TempStr),Fmt);
 	if( !FName::SafeSuppressed(NAME_Log) )
 	{
-		TCHAR TempStr[4096];
-		GET_VARARGS(TempStr,ARRAY_COUNT(TempStr),Fmt);
 		Serialize( TempStr, NAME_Log );
 	}
 }
@@ -59,7 +59,15 @@ void FOutputDevice::Logf( const TCHAR* Fmt, ... )
 void FArray::Realloc( INT ElementSize )
 {
 	guard(FArray::Realloc);
-	Data = appRealloc( Data, ArrayMax*ElementSize, TEXT("FArray") );
+	INT TotalSize = ArrayMax * ElementSize;
+#ifdef PLATFORM_DREAMCAST
+	if( TotalSize >= 65536 )
+	{
+		printf("[BIGARRAY] %d elements * %d bytes = %d total\n", ArrayMax, ElementSize, TotalSize);
+		fflush(stdout);
+	}
+#endif
+	Data = appRealloc( Data, TotalSize, TEXT("FArray") );
 	unguardf(( TEXT("%i*%i"), ArrayMax, ElementSize ));
 }
 
@@ -1720,7 +1728,7 @@ CORE_API void appInit( const TCHAR* InPackage, const TCHAR* InCmdLine, FMalloc* 
 		// Create Package.ini from default.ini.
 		FString S;
 		if( !appLoadFileToString( S, TEXT("Default.ini"), GFileManager ) )
-			appErrorf( LocalizeError("MisingIni"), "Default.ini" );
+			appErrorf( LocalizeError("MissingIni Default.ini"), "Default.ini" );
 		appSaveStringToFile( S, GIni );
 	}
 
@@ -1739,7 +1747,7 @@ CORE_API void appInit( const TCHAR* InPackage, const TCHAR* InCmdLine, FMalloc* 
 		// Create User.ini from DefUser.ini.
 		FString S;
 		if( !appLoadFileToString( S, TEXT("DefUser.ini"), GFileManager ) )
-			appErrorf( LocalizeError("MisingIni"), "DefUser.ini" );
+			appErrorf( LocalizeError("MissingIni DefUser.ini"), "DefUser.ini" );
 		appSaveStringToFile( S, GUserIni );
 	}
 

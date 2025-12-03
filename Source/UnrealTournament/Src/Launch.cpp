@@ -7,9 +7,9 @@ Revision history:
 =============================================================================*/
 
 #include "LaunchPrivate.h"
-
+#ifdef PLATFORM_SDL
 #include <SDL2/SDL.h>
-
+#endif
 /*-----------------------------------------------------------------------------
 	Global variables.
 -----------------------------------------------------------------------------*/
@@ -39,6 +39,82 @@ FFileManagerLinux FileManager;
 // Config.
 #include "FConfigCacheIni.h"
 
+#ifdef PLATFORM_DREAMCAST
+#include <kos.h>
+#include <malloc.h>
+#include <assert.h>
+#include <string.h>
+#include <stdarg.h>
+#include <kos/thread.h>
+#define MAIN_STACK_SIZE (32 * 1024)  
+#ifdef DREAMCAST_USE_FATFS
+extern "C" {
+#include <fatfs.h>
+}
+#endif
+KOS_INIT_FLAGS( INIT_DEFAULT | INIT_CDROM | INIT_CONTROLLER | INIT_KEYBOARD | INIT_MOUSE | INIT_VMU | INIT_NET );
+#endif
+
+#ifdef PLATFORM_DREAMCAST
+// fix thread stack underrun
+static void init_thread_stack(void) {
+    kthread_t *current = thd_get_current();
+    if (current) {
+        void *new_stack = malloc(MAIN_STACK_SIZE);
+        if (new_stack) {
+            current->stack = new_stack;
+            current->stack_size = MAIN_STACK_SIZE;
+            current->flags |= THD_OWNS_STACK;
+        }
+    }
+}
+
+// What dbgio device was active at startup
+DLL_EXPORT const char* GStartupDbgDev = nullptr;
+
+//
+// Display error and lock up.
+//
+void FatalError( const char* Fmt, ... ) __attribute__((noreturn));
+void FatalError( const char* Fmt, ... )
+{
+	char Msg[2048];
+
+	va_list Args;
+	va_start( Args, Fmt );
+	vsnprintf( Msg, sizeof( Msg ), Fmt, Args );
+	va_end( Args );
+
+
+	printf( "%s\n\n", Msg );
+
+	arch_stk_trace( 2 );
+
+	while (true)
+		thd_sleep( 100 );
+}
+
+//
+// Handle assertion failure.
+//
+void HandleAssertFail( const char* File, int Line, const char* Expr, const char* Msg, const char* Func )
+{
+	FatalError( "ASSERTION FAILED:\nLoc: %s:%d (%s)\nExpr: %s\n%s", File, Line, Func, Expr, Msg);
+}
+
+void HandleIrqException( irq_t Code, irq_context_t* Context, void* Data )
+{
+	bfont_draw_str_vram_fmt( 8, 8, true, "UNHANDLED EXCEPTION 0x%08x", Code );
+	bfont_draw_str_vram_fmt( 8, 32, true, "PC: %p PR: %p", (void*)Context->pc, (void*)Context->pr );
+	bfont_draw_str_vram_fmt( 8, 56, true, "SR: %p R0: %p", (void*)Context->sr, (void*)Context->r[0] );
+
+	arch_stk_trace_at( Context->r[14], 0 );
+
+	volatile INT Dummy = 1;
+	while (Dummy);
+}
+
+#endif
 
 /*-----------------------------------------------------------------------------
 	Initialization
@@ -70,6 +146,9 @@ static UEngine* InitEngine()
 	);
 	UEngine* Engine = ConstructObject<UEngine>( EngineClass );
 	Engine->Init();
+#ifdef PLATFORM_DREAMCAST
+	malloc_stats();
+#endif
 	debugf( TEXT("Startup time: %f seconds."), appSeconds()-LoadTime );
 
 	return Engine;
@@ -215,6 +294,30 @@ int CleanUpOnExit(int ErrorLevel)
 //
 int main( int argc, char* argv[] )
 {
+#ifdef PLATFORM_DREAMCAST
+	// fix thread stack underrun
+	init_thread_stack();
+	// Redirect dbgio to the framebuffer if we're not already using dcload.
+	GStartupDbgDev = dbgio_dev_get();
+	if( !GStartupDbgDev || !appStrstr( GStartupDbgDev, "dcl" ) )
+		dbgio_dev_select( "scif" );
+	assert_set_handler( HandleAssertFail );
+	irq_set_handler( EXC_UNHANDLED_EXC, HandleIrqException, nullptr );
+#ifdef DREAMCAST_USE_FATFS
+	if( fs_fat_mount_sd() == 0 )
+	{
+		printf( "SD card found, will try to load data from there\n" );
+	}
+	else
+	{
+		// failed
+		printf( "SD card not found, will default to CD\n" );
+		sd_shutdown();
+		fs_fat_shutdown();
+	}
+#endif
+#endif
+
 	try
 	{
 	guard(main);
@@ -237,7 +340,7 @@ int main( int argc, char* argv[] )
 			appStrcat( CmdLine, " " );
 		appStrcat( CmdLine, argv[i] );
 	}
-
+#ifndef PLATFORM_DREAMCAST
 	// Take care of .ini swapping.
 	TCHAR userconfig[PATH_MAX] = TEXT("");
 	sprintf(userconfig, "~/.utconf");
@@ -255,7 +358,7 @@ int main( int argc, char* argv[] )
 	TCHAR exec[PATH_MAX] = TEXT("");
 	sprintf(exec, "cp -f %s %s", userconfig, baseconfig);
 	//system( exec );
-
+#endif
 	//SimpleCopy( userconfig, baseconfig );
 
 	// Init core.
@@ -270,13 +373,17 @@ int main( int argc, char* argv[] )
 	GIsScriptable	= 1;
 	GLazyLoad		= !GIsClient || ParseParam(appCmdLine(), TEXT("LAZY"));
 
+#ifdef PLATFORM_DREAMCAST
+		Warn.AuxOut = GLog;
+		GLog		= &Warn;
+#else
 		// Init console log.
 	if (ParseParam(CmdLine, TEXT("LOG")))
 	{
 			Warn.AuxOut = GLog;
 			GLog		= &Warn;
 	}
-	
+#endif
 
 	// Init engine.
 	UEngine* Engine = InitEngine();

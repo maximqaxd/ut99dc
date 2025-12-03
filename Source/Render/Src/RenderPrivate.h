@@ -362,12 +362,19 @@ inline FLOAT SqrtApprox   (FLOAT F)
 	}
 	return F;								// compiles to fld [F].
 }
+#elif defined(PLATFORM_DREAMCAST)
+inline FLOAT DivSqrtApprox(FLOAT F) {return frsqrt(F);}
+inline FLOAT DivApprox    (FLOAT F) {return 1.0f / F;}
+inline FLOAT SqrtApprox   (FLOAT F) {return fsqrt(F);}
+#elif defined(PLATFORM_LOW_MEMORY)
+inline FLOAT DivSqrtApprox(FLOAT F) {return 1.f / sqrtf(F);}
+inline FLOAT DivApprox    (FLOAT F) {return 1.f / F;}
+inline FLOAT SqrtApprox   (FLOAT F) {return sqrtf(F);}
 #else
 inline FLOAT DivSqrtApprox(FLOAT F) {return 1.0/appSqrt(F);}
 inline FLOAT DivApprox    (FLOAT F) {return 1.0/F;}
 inline FLOAT SqrtApprox   (FLOAT F) {return appSqrt(F);}
 #endif
-
 /*------------------------------------------------------------------------------------
 	URender.
 ------------------------------------------------------------------------------------*/

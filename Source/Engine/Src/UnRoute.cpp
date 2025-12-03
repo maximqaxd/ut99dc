@@ -467,7 +467,7 @@ FLOAT APawn::findPathTowardBestInventory(AActor *&bestPath, INT bClearPaths, FLO
 
 	AActor *newPath = NULL;
 	int moveFlags = calcMoveFlags();
-	((ANavigationPoint *)EndPoints.Path[0])->visitedWeight = ::Max(10, EndPoints.Dist[0]);
+	((ANavigationPoint *)EndPoints.Path[0])->visitedWeight = ::Max<INT>(10, EndPoints.Dist[0]);
 	FLOAT bestInventoryWeight = breadthPathToInventory(EndPoints.Path[0], newPath, moveFlags, MinWeight, bPredictRespawns);
 	//debugf(NAME_DevPath,"BestInv is %f compared to weight %f", bestInventoryWeight, MinWeight);
 	if ( bestInventoryWeight > MinWeight)

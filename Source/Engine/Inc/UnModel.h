@@ -13,8 +13,8 @@
 //
 // Model objects are used for brushes and for the level itself.
 //
-enum {MAX_NODES  = 65536};
-enum {MAX_POINTS = 128000};
+enum {MAX_NODES  = 30000};
+enum {MAX_POINTS = 30000};
 class ENGINE_API UModel : public UPrimitive
 {
 #ifndef NODECALS

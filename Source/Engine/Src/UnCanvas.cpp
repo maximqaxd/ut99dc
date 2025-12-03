@@ -239,7 +239,7 @@ static inline INT DrawString
 			if( Index<PageInfo.Characters.Num() )
 			{
 				// Get proper font page.
-				FTextureInfo& Info = Infos[Min(NewPage,4)];
+				FTextureInfo& Info = Infos[Min<INT>( NewPage, 4 )];
 				if( Info.Texture!=Tex )
 				{
 					if( Info.Texture )

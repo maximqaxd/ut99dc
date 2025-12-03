@@ -646,7 +646,7 @@ void ULevel::NotifyReceivedText( UNetConnection* Connection, const TCHAR* Text )
 				Connection->State = USOCK_Closed;
 				return;
 			}
-			Connection->NegotiatedVer = Min(RemoteVer,ENGINE_VERSION);
+			Connection->NegotiatedVer = Min<INT>( RemoteVer, ENGINE_VERSION );
 
 			// Get byte limit.
 			INT Stats = GetLevelInfo()->Game->bWorldLog;
@@ -658,7 +658,7 @@ void ULevel::NotifyReceivedText( UNetConnection* Connection, const TCHAR* Text )
 		{
 			INT Rate = appAtoi(Text);
 			if( Rate>=500 )
-				Connection->CurrentNetSpeed = Clamp( Rate, 500, NetDriver->MaxClientRate );
+				Connection->CurrentNetSpeed = Clamp<INT>( Rate, 500, NetDriver->MaxClientRate );
 			debugf( TEXT("Client netspeed is %i"), Connection->CurrentNetSpeed );
 		}
 		else if( ParseCommand(&Text,TEXT("HAVE")) )
@@ -676,7 +676,7 @@ void ULevel::NotifyReceivedText( UNetConnection* Connection, const TCHAR* Text )
 			INT Response=0;
 			if
 			(	!Parse(Text,TEXT("RESPONSE="),Response)
-			||	!Engine->ChallengeResponse(Connection->Challenge)==Response )
+			||	!(Engine->ChallengeResponse(Connection->Challenge)==Response) )
 			{
 				Connection->Logf( TEXT("FAILURE CHALLENGE") );
 				Connection->FlushNet();

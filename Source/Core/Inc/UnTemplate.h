@@ -227,7 +227,12 @@ public:
 		INT OldNum = ArrayNum;
 		if( (ArrayNum+=Count)>ArrayMax )
 		{
+#ifdef PLATFORM_LOW_MEMORY
+			// Conservative growth for low memory platforms
+			ArrayMax = ArrayNum + ArrayNum/8 + 8;
+#else
 			ArrayMax = ArrayNum + 3*ArrayNum/8 + 32;
+#endif
 			Realloc( ElementSize );
 		}
 		appMemmove
@@ -249,7 +254,12 @@ public:
 		INT Index = ArrayNum;
 		if( (ArrayNum+=Count)>ArrayMax )
 		{
+#ifdef PLATFORM_LOW_MEMORY
+			// Conservative growth for low memory platforms
+			ArrayMax = ArrayNum + ArrayNum/8 + 8;
+#else
 			ArrayMax = ArrayNum + 3*ArrayNum/8 + 32;
+#endif
 			Realloc( ElementSize );
 		}
 
@@ -1089,15 +1099,15 @@ public:
 	}
 	FString Left( INT Count ) const
 	{
-		return FString( Clamp(Count,0,Len()), **this );
+		return FString( Clamp<INT>(Count, 0, Len()), **this );
 	}
 	FString LeftChop( INT Count ) const
 	{
-		return FString( Clamp(Len()-Count,0,Len()), **this );
+		return FString( Clamp<INT>(Len() - Count, 0, Len()), **this );
 	}
 	FString Right( INT Count ) const
 	{
-		return FString( **this + Len()-Clamp(Count,0,Len()) );
+		return FString( **this + Len() - Clamp<INT>(Count, 0, Len()) );
 	}
 	FString Mid( INT Start, INT Count=MAXINT ) const
 	{
