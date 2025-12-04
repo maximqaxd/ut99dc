@@ -377,6 +377,7 @@ void UEditorEngine::shadowIlluminateBsp( ULevel* Level, INT Selected )
 {
 	guard(UEditorEngine::shadowIlluminateBsp);
 	FMeshIlluminator Illum;
+	INT i;
 
 	// Init.
 	GCache.Flush();

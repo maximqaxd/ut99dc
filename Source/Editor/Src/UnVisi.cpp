@@ -596,7 +596,7 @@ void FEditorVisibility::MakePortals( INT iNode )
 	FPoly Poly = BuildInfiniteFPoly( Model, iNode );
 
 	// Filter the portal through this subtree.
-	MakePortalsClip( iNode, Poly, 0, AddPortal );
+	MakePortalsClip( iNode, Poly, 0, &FEditorVisibility::AddPortal );
 
 	// Make portals for front.
 	if( Model->Nodes(iNode).iFront != INDEX_NONE )
@@ -631,7 +631,7 @@ void FEditorVisibility::MakePortals( INT iNode )
 				Model->Nodes(iOriginalNode).iLeaf[0],
 				Model->Nodes(iOriginalNode).iBack,
 				Poly,
-				BlockPortal,
+				&FEditorVisibility::BlockPortal,
 				INDEX_NONE
 			);
 		}
@@ -724,7 +724,8 @@ INT FEditorVisibility::ActorVisibility
 
 	// Add this actor to the permeated leaf if it's not already there.
 	int Count = 0;
-	for( FActorLink* Link=LeafLights[iLeaf]; Link; Link=Link->Next )
+	FActorLink* Link;
+	for( Link=LeafLights[iLeaf]; Link; Link=Link->Next )
 		if( Link->Actor == Actor )
 			break;
 	if( !Link )
@@ -957,6 +958,7 @@ void FEditorVisibility::BspVisibility( INT iNode )
 	guard(FEditorVisibility::BspVisibility);
 	FBspNode& Node = Model->Nodes(iNode);
 	INT FragmentCount = 0;
+	FPortal* ClipPortal;
 
 	// Mark this node's portals as partitioners.
 	for( FPortal* ClipPortal = NodePortals[iNode]; ClipPortal; ClipPortal=ClipPortal->NodeNext )
@@ -1080,6 +1082,7 @@ void FEditorVisibility::FormZonesFromLeaves()
 {
 	guard(FEditorVisibility::FormZonesFromLeaves);
 	FMemMark Mark(GMem);
+	INT i;
 
 	// Go through all portals and merge the adjoining zones.
 	for( FPortal* Portal=FirstPortal; Portal; Portal=Portal->GlobalNext )
@@ -1197,6 +1200,7 @@ void FEditorVisibility::AssignAllZones( INT iNode, int Outside )
 {
 	guard(FEditorVisibility::AssignAllZones);
 	INT iOriginalNode = iNode;
+	INT i;
 
 	// Recursively assign zone numbers to children.
 	if( Model->Nodes(iOriginalNode).iFront != INDEX_NONE )
@@ -1223,7 +1227,7 @@ void FEditorVisibility::AssignAllZones( INT iNode, int Outside )
 				Model->Nodes(iOriginalNode).iLeaf [0],
 				Model->Nodes(iOriginalNode).iChild[0],
 				Poly,
-				TagZonePortalFragment,
+				&FEditorVisibility::TagZonePortalFragment,
 				INDEX_NONE
 			);
 
@@ -1302,8 +1306,9 @@ QWORD BuildZoneMasks( UModel* Model, INT iNode )
 void FEditorVisibility::BuildConnectivity()
 {
 	guard(FEditorVisibility::BuildConnectivity);
+	INT i;
 
-	for( int i=0; i<64; i++ )
+	for( i=0; i<64; i++ )
 	{
 		// Init to identity.
 		Model->Zones[i].Connectivity = ((QWORD)1)<<i;
@@ -1338,6 +1343,7 @@ void FEditorVisibility::BuildZoneInfo()
 	guard(FEditorVisibility::BuildZoneInfo);
 	int Infos=0, Duplicates=0, Zoneless=0;
 	GWarn->StatusUpdatef( 0, 0, TEXT("Computing zones") );
+	INT iActor, i;
 
 	for( INT i=0; i<FBspNode::MAX_ZONES; i++ )
 	{
@@ -1498,6 +1504,7 @@ void FEditorVisibility::FilterVolumetricLight( AActor* Actor, INT iNode, INT iPa
 void FEditorVisibility::TestVisibility()
 {
 	guard(FEditorVisibility::TestVisibility);
+	INT i;
 
 	GWarn->BeginSlowTask(TEXT("Zoning"),1,0);
 
@@ -1815,6 +1822,7 @@ void UpdateConvolutionWithPolys( UModel *Model, INT iNode, FPoly **PolyList, int
 {
 	guard(UpdateConvolutionWithPolys);
 	FBox Box(0);
+	INT j;
 
 	FBspNode &Node = Model->Nodes(iNode);
 	Node.iCollisionBound = Model->LeafHulls.Num();

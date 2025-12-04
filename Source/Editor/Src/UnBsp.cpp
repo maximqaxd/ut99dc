@@ -663,6 +663,7 @@ void UEditorEngine::bspValidateBrush
 )
 {
 	guard(UEditorEngine::bspValidateBrush);
+	INT i;
 	Brush->Modify();
 	if( ForceValidate || !Brush->Linked )
 	{
@@ -719,6 +720,7 @@ void UEditorEngine::bspValidateBrush
 int TryToMerge( FPoly *Poly1, FPoly *Poly2 )
 {
 	guard(TryToMerge);
+	INT i;
 
 	// Vertex count reasonable?
 	if( Poly1->NumVertices+Poly2->NumVertices > FPoly::MAX_VERTICES )
@@ -859,6 +861,7 @@ void UEditorEngine::bspMergeCoplanars( UModel* Model, UBOOL RemapLinks, UBOOL Me
 {
 	guard(UEditorEngine::bspMergeCoplanars);
 	INT OriginalNum = Model->Polys->Element.Num();
+	INT i;
 
 	// Mark all polys as unprocessed.
 	for( INT i=0; i<Model->Polys->Element.Num(); i++ )
@@ -2219,6 +2222,7 @@ void AddPointToNode
 )
 {
 	guard(AddPointToNode);
+	INT i;
 
 	FBspNode &Node = Model->Nodes(iNode);
 	if( (Node.NumVertices+1) >= FBspNode::MAX_NODE_VERTICES )
@@ -2275,7 +2279,7 @@ int DistributePoint
 )
 {
 	guard(DistributePoint);
-	INT Count = 0;
+	INT i, Count = 0;
 
 	// Handle front, back, and plane.
 	FLOAT Dist = Model->Nodes(iNode).Plane.PlaneDot(Model->Points(pVertex));
@@ -2404,6 +2408,7 @@ void MergeNearPoints( UModel *Model, FLOAT Dist )
 	FMemMark Mark(GMem);
 	INT* PointRemap = new(GMem,Model->Points.Num())INT;
 	INT Merged=0,Collapsed=0;
+	INT i;
 
 	// Find nearer point for all points.
 	for( INT i=0; i<Model->Points.Num(); i++ )
@@ -2467,6 +2472,7 @@ void UEditorEngine::bspOptGeom( UModel *Model )
 {
 	guard(UEditorEngine::bspOptGeom);
 	FPointVertList PointVerts;
+	INT i;
 
 	debugf( NAME_Log, TEXT("BspOptGeom begin") );
 

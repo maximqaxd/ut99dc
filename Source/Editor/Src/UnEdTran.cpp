@@ -306,6 +306,7 @@ public:
 		// Figure out direction.
 		INT Start = Inc==1 ? 0             : Records.Num()-1;
 		INT End   = Inc==1 ? Records.Num() :              -1;
+		INT i;
 
 		// Init objects.
 		for( INT i=Start; i!=End; i+=Inc )

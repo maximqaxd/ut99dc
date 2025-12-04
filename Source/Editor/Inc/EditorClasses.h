@@ -75,7 +75,7 @@ AUTOGENERATE_FUNCTION(UBrushBuilder,-1,execBeginBrush);
 #ifndef NAMES_ONLY
 #undef AUTOGENERATE_NAME
 #undef AUTOGENERATE_FUNCTION
-#endif NAMES_ONLY
+#endif 
 
 #if _MSC_VER
 #pragma pack (pop)

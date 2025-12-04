@@ -91,6 +91,7 @@ void UEditorEngine::edactDuplicateSelected( ULevel* Level )
 {
 	guard(UEditorEngine::edactDuplicateSelected);
 	FVector Delta(32.0, 32.0, 0.0);
+	INT i;
 
 	// Untag all actors.
 	for( int i=0; i<Level->Actors.Num(); i++ )
@@ -149,6 +150,7 @@ void UEditorEngine::edactDuplicateSelected( ULevel* Level )
 void UEditorEngine::edactReplaceSelectedBrush( ULevel* Level )
 {
 	guard(UEditorEngine::edactReplaceSelectedBrush);
+	INT i;
 
 	// Untag all actors.
 	for( int i=0; i<Level->Actors.Num(); i++ )
@@ -204,6 +206,7 @@ static void CopyActorProperties( AActor* Dest, const AActor *Src )
 void UEditorEngine::edactReplaceSelectedWithClass( ULevel* Level,UClass* Class )
 {
 	guard(UEditorEngine::edactReplaceSelectedWithClass);
+	INT i;
 
 	// Untag all actors.
 	for( int i=0; i<Level->Actors.Num(); i++ )
@@ -255,6 +258,7 @@ void UEditorEngine::edactReplaceSelectedWithClass( ULevel* Level,UClass* Class )
 void UEditorEngine::edactReplaceClassWithClass( ULevel* Level,UClass* Class,UClass* WithClass )
 {
 	guard(UEditorEngine::edactReplaceClassWithClass);
+	INT i;
 
 	// Untag all actors.
 	for( int i=0; i<Level->Actors.Num(); i++ )
@@ -376,6 +380,7 @@ void UEditorEngine::edactUnHideAll( ULevel* Level )
 void UEditorEngine::edactSelectAll( ULevel* Level )
 {
 	guard(UEditorEngine::edactSelectAll);
+	INT i;
 #if 1
 	// Add all selected actors' group name to the GroupArray
 	TArray<FName> GroupArray;
@@ -448,6 +453,7 @@ void UEditorEngine::edactSelectAll( ULevel* Level )
 void UEditorEngine::edactSelectInside( ULevel* Level )
 {
 	guard(UEditorEngine::edactSelectInside);
+	INT i;
 
 	// Untag all actors.
 	for( INT i=0; i<Level->Actors.Num(); i++ )

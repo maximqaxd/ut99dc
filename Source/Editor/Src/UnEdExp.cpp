@@ -171,7 +171,7 @@ UBOOL UClassExporterH::ExportText( UObject* Object, const TCHAR* Type, FOutputDe
 			for( INT i=0; i<FName::GetMaxNames(); i++ )
 				if( FName::GetEntry(i) && (FName::GetEntry(i)->Flags & RF_TagExp) )
 					Ar.Logf( TEXT("AUTOGENERATE_NAME(%s)\r\n"), *FName((EName)(i)) );
-			for( i=0; i<FName::GetMaxNames(); i++ )
+			for( INT i=0; i<FName::GetMaxNames(); i++ )
 				if( FName::GetEntry(i) )
 					FName::GetEntry(i)->Flags &= ~RF_TagExp;
 			Ar.Logf( TEXT("\r\n#ifndef NAMES_ONLY\r\n\r\n") );
@@ -192,7 +192,7 @@ UBOOL UClassExporterH::ExportText( UObject* Object, const TCHAR* Type, FOutputDe
 					TCHAR Temp[256];
 					appStrcpy( Temp, *ItE->Names(0) );
 					appStrcpy( appStrchr(Temp,'_'),TEXT("_MAX"));
-					Ar.Logf( TEXT("%s    %-24s=%i,\r\n"), appSpc(TextIndent), Temp, i );
+					Ar.Logf( TEXT("%s    %-24s=%i,\r\n"), appSpc(TextIndent), Temp, ItE->Names.Num() );
 				}
 				Ar.Logf( TEXT("};\r\n") );
 			}

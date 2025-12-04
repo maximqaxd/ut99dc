@@ -26,6 +26,7 @@
 #include <strings.h>
 #include <ctype.h>
 #include <malloc.h>
+#include <dirent.h>
 #ifdef PLATFORM_WIN32
 #include <minwindef.h>
 #endif

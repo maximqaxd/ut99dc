@@ -39,8 +39,9 @@ void FName::Hardcode( FNameEntry* AutoName )
 		Names.AddItem( NULL );
 
 	// Add name to table.
-	if( Names(AutoName->Index) )
-		appErrorf( TEXT("Hardcoded name %i was duplicated"), AutoName->Index );
+	//if( Names(AutoName->Index) )
+	//	appErrorf( TEXT("Hardcoded name %i was duplicated"), AutoName->Index );
+	//maximqad: fix DCUtil 
 	Names(AutoName->Index) = AutoName;
 
 	unguard;

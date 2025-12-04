@@ -171,7 +171,7 @@ class UPackageFlagCommandlet : public UCommandlet
 			FString Flag;
 			while( ParseToken(Parms,Flag,0) )
 			{
-				for( i=0;i<NumFlags;i++ )
+				for( INT i=0;i<NumFlags;i++ )
 				{
 					if( !appStricmp( &(*Flag)[1], FlagNames[i] ) )
 					{
@@ -193,7 +193,7 @@ class UPackageFlagCommandlet : public UCommandlet
 
 			GWarn->Logf( TEXT("Saved %s."), *Dest );
 			GWarn->Logf( TEXT("New flags: %d"), (INT)Package->PackageFlags );
-			for( i=0;i<NumFlags;i++ )
+			for( INT i=0;i<NumFlags;i++ )
 				if( Package->PackageFlags & Flags[i] )
 					GWarn->Logf( TEXT(" %s"), FlagNames[i]);
 		}

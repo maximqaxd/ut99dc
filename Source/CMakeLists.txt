@@ -17,11 +17,14 @@ endif()
 option(USE_SDL "Use NSDLDrv instead of WinDrv" ON)
 option(LOW_MEMORY "Conserve memory as much as possible" OFF)
 option(BUILD_UNREALTOURNAMENT "Build the launcher" ON)
+option(BUILD_EDITOR "Build Editor (GUI support requires Windows)" ON)
 option(BUILD_NOPENGLDRV "Build NOpenGLDrv" OFF)
 option(BUILD_PVRDRV "Build PVRDrv (Dreamcast only)" OFF)
 option(BUILD_NULLSOUNDDRV "Build SoundDrv (Null driver)" ON)
 option(BUILD_AICADRV "Build AICADrv (Dreamcast AICA sound driver)" OFF)
+option(BUILD_DCUTIL "Build DCUtil" ON)
 option(BUILD_STATIC "Link everything into a single binary" OFF)
+
 
 option(DREAMCAST_USE_FATFS "Try to load data from SD or IDE" OFF)
 option(DREAMCAST_USE_FILE_POOL "Use file handle pool (wrap stdio)" ON)
@@ -38,12 +41,14 @@ if(PLATFORM_DREAMCAST)
   set(BUILD_STATIC ON)
   set(USE_SDL OFF)
   set(LOW_MEMORY ON)
+  set(BUILD_EDITOR OFF) 
   set(BUILD_NOPENALDRV OFF)
   set(BUILD_NULLSOUNDDRV ON)
   set(BUILD_AICADRV OFF)
   set(BUILD_NOPENGLESDRV OFF)
   set(BUILD_GLDCDRV OFF)
   set(BUILD_PVRDRV ON)
+  set(BUILD_DCUTIL OFF)
 endif()
 
 
@@ -290,6 +295,12 @@ if(BUILD_NULLSOUNDDRV)
   add_subdirectory(SoundDrv)
   list(APPEND INSTALL_TARGETS SoundDrv)
 endif()
+if(BUILD_EDITOR)
+  # GUI requires WinDrv
+  add_subdirectory(Editor)
+  list(APPEND INSTALL_TARGETS Editor)
+endif()
+
 
 if(BUILD_UNREALTOURNAMENT)
   add_subdirectory(UnrealTournament)
@@ -297,6 +308,12 @@ if(BUILD_UNREALTOURNAMENT)
 endif()
 
 # assemble all modules and pdbs in one dir
+
+if(BUILD_DCUTIL)
+  set(BUILD_EDITOR ON)
+  list(APPEND INSTALL_TARGETS DCUtil)
+  add_subdirectory(DCUtil)
+endif()
 
 set(INSTALL_FILES )
 set(INSTALL_PROGRAMS )

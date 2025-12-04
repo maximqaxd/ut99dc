@@ -1615,8 +1615,9 @@ UBOOL FScriptCompiler::CompileFieldExpr
 
 		// Parse the parameters.
 		FToken ParmToken[MAX_FUNC_PARMS];
+		TFieldIterator<UProperty> It(Function);
 		INT Count=0;
-		for( TFieldIterator<UProperty> It(Function); It && (It->PropertyFlags&(CPF_Parm|CPF_ReturnParm))==CPF_Parm; ++It,++Count )
+		for( ; It && (It->PropertyFlags&(CPF_Parm|CPF_ReturnParm))==CPF_Parm; ++It,++Count )
 		{
 			// Get parameter.
 			FPropertyBase Parm = FPropertyBase( *It );
@@ -1657,7 +1658,7 @@ UBOOL FScriptCompiler::CompileFieldExpr
 			else if( IsIteratorCast && Count==0 )
 				ParmToken[Count].GetConstObject( UClass::StaticClass(), *(UObject**)&IteratorClass );
 		}
-		for( It; It && (It->PropertyFlags&(CPF_Parm|CPF_ReturnParm))==CPF_Parm; ++It )
+		for( ; It && (It->PropertyFlags&(CPF_Parm|CPF_ReturnParm))==CPF_Parm; ++It )
 			check(It->PropertyFlags & CPF_OptionalParm);
 
 		// Get closing paren.
@@ -1737,6 +1738,7 @@ int FScriptCompiler::ConversionCost
 )
 {
 	guard(FScriptCompiler::ConversionCost);
+	UClass* Test;
 	DWORD Conversion = GetConversion( Dest, Source );
 
 	if( Dest.MatchesType(Source,1) )
@@ -2913,7 +2915,8 @@ void FScriptCompiler::PopNest( ENestType NestType, const TCHAR* Descr )
 			if( Fixup->Type == FIXUP_Label )
 			{
 				// Fixup a local label.
-				for( FLabelRecord* LabelRecord = TopNest->LabelList; LabelRecord; LabelRecord=LabelRecord->Next )
+				FLabelRecord* LabelRecord;
+				for( LabelRecord = TopNest->LabelList; LabelRecord; LabelRecord=LabelRecord->Next )
 				{
 					if( LabelRecord->Name == Fixup->Name )
 					{
@@ -4538,7 +4541,8 @@ void FScriptCompiler::CompileCommand( FToken& Token, UBOOL& NeedSemicolon )
 		// Only valid from within a function or operator.
 		guard(Return);
 		CheckAllow( TEXT("'Return'"), ALLOW_Return );
-		for( INT i=NestLevel-1; i>0; i-- )
+		INT i;
+		for( i=NestLevel-1; i>0; i-- )
 		{
 			if( Nest[i].NestType==NEST_Function )
 				break;
@@ -4768,7 +4772,8 @@ void FScriptCompiler::CompileCommand( FToken& Token, UBOOL& NeedSemicolon )
 		else
 		{
 			// Get label list for this nest level.
-			for( INT iNest=NestLevel-1; iNest>=2; iNest-- )
+			INT iNest;
+			for( iNest=NestLevel-1; iNest>=2; iNest-- )
 				if( Nest[iNest].NestType==NEST_State || Nest[iNest].NestType==NEST_Function || Nest[iNest].NestType==NEST_ForEach )
 					break;
 			if( iNest < 2 )
@@ -4838,7 +4843,8 @@ void FScriptCompiler::CompileCommand( FToken& Token, UBOOL& NeedSemicolon )
 		}
 
 		// Get label list for this nest level.
-		for( INT iNest=NestLevel-1; iNest>=2; iNest-- )
+		INT iNest;
+		for( iNest=NestLevel-1; iNest>=2; iNest-- )
 			if( Nest[iNest].NestType==NEST_State || Nest[iNest].NestType==NEST_Function || Nest[iNest].NestType==NEST_ForEach )
 				break;
 		if( iNest < 2 )

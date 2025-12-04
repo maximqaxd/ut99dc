@@ -308,6 +308,7 @@ IMPLEMENT_CLASS(UClassFactoryUC);
 static void ForceValid( ULevel* Level, UStruct* Struct, BYTE* Data )
 {
 	guard(ForceValid);
+	INT j;
 	for( TFieldIterator<UProperty> It(Struct); It; ++It )
 	{
 		for( INT i=0; i<It->ArrayDim; i++ )
@@ -992,6 +993,7 @@ public:
 	friend FArchive& operator<<( FArchive& Ar, FPCXFileHeader& H )
 	{
 		guard(FPCXFileHeader<<);
+		INT i;
 		Ar << H.Manufacturer << H.Version << H.Encoding << H.BitsPerPixel;
 		Ar << H.XMin << H.YMin << H.XMax << H.YMax << H.XDotsPerInch << H.YDotsPerInch;
 		for( INT i=0; i<ARRAY_COUNT(H.OldColorMap); i++ )
@@ -1313,6 +1315,7 @@ UBOOL UTextureExporterPCX::ExportBinary( UObject* Object, const TCHAR* Type, FAr
 {
 	guard(UTextureExporterPCX::ExportBinary);
 	UTexture* Texture = CastChecked<UTexture>( Object );
+	INT i;
 
 	// Set all PCX file header properties.
 	FPCXFileHeader PCX;
@@ -1408,6 +1411,7 @@ UBOOL UTextureExporterBMP::ExportBinary( UObject* Object, const TCHAR* Type, FAr
 {
 	guard(UTextureExporterBMP::ExportBinary);
 	UTexture* Texture = CastChecked<UTexture>( Object );
+	INT i;
 
 	// Figure out format.
 	ETextureFormat Format      = (ETextureFormat)Texture->Format;

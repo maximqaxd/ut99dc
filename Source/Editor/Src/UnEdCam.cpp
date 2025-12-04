@@ -352,6 +352,7 @@ UBOOL ScaleIsWithinBounds( FVector* V, FLOAT Min, FLOAT Max )
 void UEditorEngine::NoteActorMovement( ULevel* Level )
 {
 	guard(NoteActorMovement);
+	INT i;
 	UBOOL Found=0;
 	if( !GUndo && !(GEditor->ClickFlags & CF_MOVE_ACTOR) )
 	{
@@ -543,7 +544,7 @@ void MoveActors( ULevel* Level, FVector Delta, FRotator DeltaRot, UBOOL Constrai
 -----------------------------------------------------------------------------*/
 
 struct FPolyVertex {
-	FPolyVertex::FPolyVertex( INT i, INT j ) : PolyIndex(i), VertexIndex(j) {};
+	FPolyVertex( INT i, INT j ) : PolyIndex(i), VertexIndex(j) {};
 	INT PolyIndex;
 	INT VertexIndex;
 };
@@ -557,6 +558,7 @@ static TArray<FPolyVertex> VertexEditList;
 void GrabVertex( ULevel* Level )
 {
 	guard(GrabVertex);
+	INT i;
 
 	if( VertexEditActor!=NULL )
 		return;
@@ -1934,6 +1936,7 @@ void UEditorEngine::NoteSelectionChange( ULevel* Level )
 void UEditorEngine::SelectNone( ULevel *Level, UBOOL Notify )
 {
 	guard(UEditorEngine::SelectNone);
+	INT i;
 
 	// Unselect all actors.
 	for( INT i=0; i<Level->Actors.Num(); i++ )

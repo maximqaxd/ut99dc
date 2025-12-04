@@ -95,7 +95,7 @@ class UMakeCommandlet : public UCommandlet
 						FName::GetEntry(i)->Flags &= ~RF_TagExp;
 				for( TObjectIterator<UClass> It; It; ++It )
 					It->ClearFlags( RF_TagImp | RF_TagExp );
-				for( It=TObjectIterator<UClass>(); It; ++It )
+				for( TObjectIterator<UClass> It; It; ++It )
 					if( It->GetOuter()==PkgObject && It->ScriptText && (It->GetFlags()&RF_Native) && !(It->ClassFlags&CLASS_NoExport) )
 						ClassCount++, It->SetFlags( RF_TagExp );
 

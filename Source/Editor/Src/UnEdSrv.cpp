@@ -53,6 +53,7 @@ UBOOL UEditorEngine::SafeExec( const TCHAR* InStr, FOutputDevice& Ar )
 {
 	guard(UEditorEngine::SafeExec);
 	TCHAR TempFname[256], TempStr[256], TempName[NAME_SIZE];
+	INT i;
 	const TCHAR* Str=InStr;
 	if( ParseCommand(&Str,TEXT("MACRO")) || ParseCommand(&Str,TEXT("EXEC")) )//oldver (exec)
 	{
@@ -500,6 +501,7 @@ UBOOL UEditorEngine::Exec( const TCHAR* Stream, FOutputDevice& Ar )
 	TCHAR ErrorTemp[256]=TEXT("Setup: ");
 	guard(UEditorEngine::Exec);
 	UBOOL Processed=0;
+	INT i;
 
 	_WORD	 		Word1,Word2,Word4;
 	INT				Index1;

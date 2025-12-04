@@ -225,7 +225,7 @@ TFace::~TFace()
 		}
 	}
 
-	for( i=0; i<3; i++) 
+	for( INT i=0; i<3; i++) 
 	{
 		INT i2 = (i+1)%3;
 		if( ! Verts[i] || ! Verts[i2] ) continue;
@@ -319,7 +319,7 @@ void TFace::ReplaceVertex(TVertex *VOld, TVertex *VNew)
 		Verts[i]->RemoveIfNonNeighbor(VOld);
 	}
 
-	for( i=0; i<3; i++ ) 
+	for( INT i=0; i<3; i++ ) 
 	{
 		check( Verts[i]->Faces.FindItemIndex(this) != INDEX_NONE ); 
 		for( INT j=0; j<3; j++ ) if( i!=j ) 
@@ -841,7 +841,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 
 	// Materials building.
 	// A material is any unique combination of a texture and the flags.
-	for( p=0; p<Mesh->Tris.Num(); p++ )
+	for( INT p=0; p<Mesh->Tris.Num(); p++ )
 	{
 		UBOOL Unique = true;
 		INT ThisMatIndex = 0;
@@ -883,7 +883,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 
 	// Record Wedges.
 	Mesh->Wedges.Empty();
-	for( p=0; p<Mesh->Tris.Num(); p++ )
+	for( INT p=0; p<Mesh->Tris.Num(); p++ )
 	{
 		for( INT t=0; t<3; t++)
 		{
@@ -960,7 +960,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	// Full vertex set for LOD now known.
 	INT TrueFrameVertNum = TModel.GVerts.Num();
 	// Backup original indices.
-	for( t=0; t<TModel.GVerts.Num(); t++)
+	for( INT t=0; t<TModel.GVerts.Num(); t++)
 	{
 		TModel.GOriginalVertIdx.AddItem(TModel.GVerts(t)->OriginalIndex);
 		TModel.GVerts(t)->OriginalIndex = t; // Create permutation using CURRENT index set.
@@ -978,7 +978,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	// Fill more of the TModel.
 	
 	// Wedges
-	for( t=0; t<Mesh->Wedges.Num(); t++ )
+	for( INT t=0; t<Mesh->Wedges.Num(); t++ )
 	{
 		TWedge NewWedge;
 		// NewWedge.MaterialID
@@ -995,7 +995,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	
 
 	// Faces, Wedge materials.
-	for( t=0; t<Mesh->Faces.Num(); t++)
+	for( INT t=0; t<Mesh->Faces.Num(); t++)
 	{
 		TWedge* TV[3];
 		for( int j=0; j<3; j++ )
@@ -1037,11 +1037,11 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	NOTE(debugf("##reduced mesh - vertices: %i  Triangles: %i Wedges: %i ",TModel.GVerts.Num(),TModel.GFaces.Num(),TModel.GWedges.Num()+TModel.GAuxWedges.Num()));
 
 	// Debugging
-	for ( t=0; t<Mesh->CollapsePointThus.Num(); t++ )
+	for ( INT t=0; t<Mesh->CollapsePointThus.Num(); t++ )
 	{
 		NOTE( debugf(" CollapsePointThus # %5i    %5i ", t, Mesh->CollapsePointThus(t) );)
 	}
-	for ( t=0; t<Permutation.Num(); t++ )
+	for ( INT t=0; t<Permutation.Num(); t++ )
 	{
 		NOTE( debugf(" Permutation # %5i    %5i ", t, Permutation(t) );)
 	}
@@ -1050,7 +1050,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	//  Vertex collapse list preparation .
 	NOTE( debugf(" Vertex collapse list preparation - collapsingarray size: %i",Mesh->CollapsePointThus.Num());)
 	NOTE( debugf(" Permutation array size: %i",Permutation.Num());)
-	for( i=0; i<Mesh->CollapsePointThus.Num(); i++ ) 
+	for( INT i=0; i<Mesh->CollapsePointThus.Num(); i++ ) 
 	{
 		if( Mesh->CollapsePointThus(i) != 0xFFFF )
 		{
@@ -1077,7 +1077,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	// Reorder all vertex indices in the Wedges accordingly, and prepare its internal resort array.
 	TWedgeSort* WedgePermutation = New<TWedgeSort>(GMem,TModel.GWedges.Num());
 
-	for( w=0; w<TModel.GWedges.Num(); w++ )
+	for( INT w=0; w<TModel.GWedges.Num(); w++ )
 	{
 		// Permutate the vertices inside all our wedges.
 		TModel.GWedges(w).VertexIndex = Permutation(TModel.GWedges(w).VertexIndex);
@@ -1103,7 +1103,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	
 	// Apply the sorted WedgePermutation.
 	TArray<TWedge>  WorkWedges;
-	for( w=0; w<TModel.GWedges.Num(); w++ )
+	for( INT w=0; w<TModel.GWedges.Num(); w++ )
 	{
 		INT PermIdx = WedgePermutation[w].SortedWedgeIndex;
 		WorkWedges.AddItem( TModel.GWedges(PermIdx) );
@@ -1119,7 +1119,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 
 	WedgeRemapList.Add(WorkWedges.Num()); 
 
-	for ( w=0; w<WorkWedges.Num(); w++)
+	for ( INT w=0; w<WorkWedges.Num(); w++)
 	{
 		// Build the condensed version.
 		if ( w==0 )
@@ -1147,18 +1147,18 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 
 	TArray<INT> WedgeFlagger;
 	WedgeFlagger.Add(WorkWedges.Num());
-	for ( w=0; w<WorkWedges.Num(); w++) 
+	for ( INT w=0; w<WorkWedges.Num(); w++) 
 	{
 		WedgeFlagger(w)=-1;
 	}
 	
 	// Create the wedge LOD collapse list. Mesh->CollapseWedgeThus...
 	Mesh->CollapseWedgeThus.Add(UniqueWedges.Num());
-	for ( w=0; w<UniqueWedges.Num(); w++) 
+	for ( INT w=0; w<UniqueWedges.Num(); w++) 
 	{
 		Mesh->CollapseWedgeThus(w)= w;
 	}
-	for( w=0; w<WorkWedges.Num(); w++)
+	for( INT w=0; w<WorkWedges.Num(); w++)
 	{
 		INT WOrig = WorkWedges(w).OriginalIndex;
 		INT UIndex = WedgeRemapToUnique(w);
@@ -1177,7 +1177,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	// Move final wedges to the Mesh->Wedges wedge array.
 	Mesh->Wedges.Empty();
 	Mesh->Wedges.Add(UniqueWedges.Num());
-	for( w=0; w<UniqueWedges.Num(); w++ )
+	for( INT w=0; w<UniqueWedges.Num(); w++ )
 	{
 		Mesh->Wedges(w).TexUV.U = UniqueWedges(w).U;
 		Mesh->Wedges(w).TexUV.V = UniqueWedges(w).V;
@@ -1186,7 +1186,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 		NOTE(debugf(" Finalwedge: # %4i Wedge UV %3i %3i   Vertex: %4i Origindex: %4i ",w,UniqueWedges(w).U,UniqueWedges(w).V,UniqueWedges(w).VertexIndex,UniqueWedges(w).OriginalIndex ));  
 	}
 
-	for ( w=0; w<UniqueWedges.Num(); w++) 
+	for ( INT w=0; w<UniqueWedges.Num(); w++) 
 	{
 		 NOTE(debugf(TEXT(" CollapseWedgeThus ( %4i ) = %4i , vertex: %i"), w, Mesh->CollapseWedgeThus(w),UniqueWedges(w).VertexIndex ););
 	}
@@ -1211,7 +1211,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	}
 
 	// test: are FACE collapse FaceLevels set correctly ?
-	for( w=0; w< Mesh->Faces.Num() ; w++ )
+	for( INT w=0; w< Mesh->Faces.Num() ; w++ )
 		NOTE(debugf(" Face: %4i  Matx: %i  Wedges: %4i %4i %4i  FaceLevel %4i  Verts: %4i %4i %4i",w,Mesh->Faces(w).MaterialIndex, Mesh->Faces(w).iVertex[0],Mesh->Faces(w).iVertex[1],Mesh->Faces(w).iVertex[2],Mesh->FaceLevel(w),
 		              Mesh->Wedges(Mesh->Faces(w).iVertex[0]).iVertex,Mesh->Wedges(Mesh->Faces(w).iVertex[1]).iVertex,Mesh->Wedges(Mesh->Faces(w).iVertex[2]).iVertex); )
 
@@ -1236,17 +1236,17 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 	FullRemap.Add(FullFrameVertNum);
 
 	//#debug
-	for( t=0; t<FullFrameVertNum; t++)
+	for( INT t=0; t<FullFrameVertNum; t++)
 	{
 		FullRemap(t) = -t;
 	}
 
-	for( t=0; t<SpecialCoordVerts.Num(); t++)
+	for( INT t=0; t<SpecialCoordVerts.Num(); t++)
 	{
 		FullRemap(t) = SpecialCoordVerts(t); // map special coords to the beginning.
 	}
 
-	for( t=0; t<TrueFrameVertNum; t++)
+	for( INT t=0; t<TrueFrameVertNum; t++)
 	{
 		// Map all regular used verts to their sorted position after the special ones.
 		NOTE( debugf(" # %5i FR DestIndex %5i  NewIn %5i ",t, SpecialCoordVerts.Num()+Permutation(t),TModel.GOriginalVertIdx(t));)
@@ -1254,7 +1254,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 		FullRemap(SpecialCoordVerts.Num() + Permutation(t)) =  TModel.GOriginalVertIdx(t); 
 	}
 
-	for( t=0; t<FullFrameVertNum; t++)
+	for( INT t=0; t<FullFrameVertNum; t++)
 	{
 		NOTE(debugf(" Fullremap index %5i  content %5i ",t, FullRemap(t));)
 	}
@@ -1265,7 +1265,7 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 		// Bigass new array.
 		TArray<FMeshVert> NewVerts;
 		NewVerts.Add( FullFrameVertNum * Mesh->AnimFrames);
-		for( f=0; f<Mesh->AnimFrames; f++ )
+		for( INT f=0; f<Mesh->AnimFrames; f++ )
 		{
 			NOTE(debugf(" fullremap AnimFrame %i ",f);)
 			INT FrameStart = f * Mesh->FrameVerts;
@@ -1291,11 +1291,11 @@ void UEditorEngine::meshLODProcess( ULodMesh* Mesh,	ULODProcessInfo* LODInfo)
 		// for the texture LOD gauging !
 		TArray<INT> UnFullRemap; 
 		UnFullRemap.Add(Mesh->FrameVerts);
-		for( t=0; t<FullFrameVertNum; t++)
+		for( INT t=0; t<FullFrameVertNum; t++)
 		{
 			UnFullRemap(FullRemap(t))= t;
 		}
-		for( t=0; t<Mesh->Tris.Num(); t++)
+		for( INT t=0; t<Mesh->Tris.Num(); t++)
 		{
 			Mesh->Tris(t).iVertex[0] = UnFullRemap( Mesh->Tris(t).iVertex[0] );
 			Mesh->Tris(t).iVertex[1] = UnFullRemap( Mesh->Tris(t).iVertex[1] );

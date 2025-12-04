@@ -212,6 +212,133 @@ CORE_API void appMemcpy( void* Dest, const void* Src, INT Count )
 }
 #endif
 
+//
+// Find files in a directory.
+// Example Dir = "c:\\place\\*.ext".
+// Example Result = "test.ext"
+//
+CORE_API TArray<FString> appFindFiles( const TCHAR* Spec )
+{
+	guard(appFindFiles)
+	TArray<FString> Result;
+
+#ifdef PLATFORM_WIN32
+	_finddata_t Found;
+	long hFind = _findfirst( Spec, &Found );
+	if( hFind != -1 )
+	{
+		do new(Result)FString(Found.name);
+		while( _findnext( hFind, &Found )!=-1 );
+	}
+#else
+	DIR *Dirp;
+	struct dirent* Direntp;
+	char Path[256];
+	char File[256];
+	char *Filestart;
+	char *Cur;
+	UBOOL Match;
+
+	// Initialize Path to Filename.
+	appStrcpy( Path, Spec );
+
+	// Convert MS "\" to Unix "/".
+	for( Cur = Path; *Cur != '\0'; Cur++ )
+		if( *Cur == '\\' )
+			*Cur = '/';
+
+	// Separate path and filename.
+	Filestart = Path;
+	for( Cur = Path; *Cur != '\0'; Cur++ )
+		if( *Cur == '/' )
+			Filestart = Cur + 1;
+
+	// Store filename and remove it from Path.
+	appStrcpy( File, Filestart );
+	*Filestart = '\0';
+
+	// Check for empty path.
+	if (appStrlen( Path ) == 0)
+		appSprintf( Path, "./" );
+
+	// Open directory, get first entry.
+	Dirp = opendir( Path );
+	if (Dirp == NULL)
+			return Result;
+	Direntp = readdir( Dirp );
+
+	// Check each entry.
+	while( Direntp != NULL )
+	{
+		Match = false;
+
+		if( appStrcmp( File, "*" ) == 0 )
+		{
+			// Any filename.
+			Match = true;
+		}
+		else if( appStrcmp( File, "*.*" ) == 0 )
+		{
+			// Any filename with a '.'.
+			if( appStrchr( Direntp->d_name, '.' ) != NULL )
+				Match = true;
+		}
+		else if( File[0] == '*' )
+		{
+			// "*.ext" filename.
+			if( appStrstrFs( Direntp->d_name, (File + 1) ) != NULL )
+				Match = true;
+		}
+		else if( File[appStrlen( File ) - 1] == '*' )
+		{
+			// "name.*" filename.
+			if( appStrnicmp( Direntp->d_name, File, appStrlen( File ) - 1 ) == 0 )
+				Match = true;
+		}
+		else if( appStrstr( File, "*" ) != NULL )
+		{
+			// single str.*.str match.
+			char* star = appStrstr( File, "*" );
+			INT filelen = appStrlen( File );
+			INT starlen = appStrlen( star );
+			INT starpos = filelen - (starlen - 1);
+			char prefix[256];
+			appStrncpy( prefix, File, starpos );
+			star++;
+			if( appStrnicmp( Direntp->d_name, prefix, starpos - 1 ) == 0 )
+			{
+				// part before * matches
+				char* postfix = Direntp->d_name + (appStrlen(Direntp->d_name) - starlen) + 1;
+				if ( appStricmp( postfix, star ) == 0 )
+					Match = true;
+			}
+		}
+		else
+		{
+			// Literal filename.
+			if( appStricmp( Direntp->d_name, File ) == 0 )
+				Match = true;
+		}
+
+		// Does this entry match the Filename?
+		if( Match )
+		{
+			// Yes, add the file name to Result.
+			new(Result)FString(Direntp->d_name);
+		}
+	
+		// Get next entry.
+		Direntp = readdir( Dirp );
+	}
+
+	// Close directory.
+	closedir( Dirp );
+#endif
+
+	return Result;
+	unguard;
+}
+
 /*-----------------------------------------------------------------------------
 	String functions.
 -----------------------------------------------------------------------------*/
@@ -296,6 +423,14 @@ CORE_API TCHAR* appStrstr( const TCHAR* String, const TCHAR* Find )
 	return (TCHAR*)wcsstr( String, Find );
 #else
 	return const_cast<TCHAR*>(strstr( String, Find ));
+#endif
+}
+CORE_API char* appStrstrFs( const TCHAR* String, const TCHAR* Find )
+{
+#ifndef PLATFORM_CASE_SENSITIVE_FS
+	return appStrstr( String, Find );
+#else
+	return const_cast<char*>( strcasestr(String,Find) );
 #endif
 }
 
