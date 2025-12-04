@@ -14,7 +14,7 @@ extern "C" int __real_setvbuf( FILE *, char *, int, size_t );
 
 #define FPOOL_MAX_FILES 7
 #define FPOOL_MAX_FNAME 64
-#define FPOOL_SIZE 48
+#define FPOOL_SIZE 64
 
 struct FPoolHandle
 {

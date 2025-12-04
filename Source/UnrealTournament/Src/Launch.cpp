@@ -317,20 +317,19 @@ int main( int argc, char* argv[] )
 	}
 #endif
 #endif
-
 	try
 	{
 	guard(main);
 	
 	INT ErrorLevel = 0;
 	GIsStarted	   = 1;
-
+#ifndef PLATFORM_DREAMCAST
 	// Set module name.
 	appStrcpy( GModule, argv[0] );
 
 	// Set the package name.
 	appStrcpy( THIS_PACKAGE, appPackage() );	
-
+#endif
 	// Get the command line.
 	TCHAR CmdLine[1024], *CmdLinePtr=CmdLine;
 	*CmdLinePtr = 0;

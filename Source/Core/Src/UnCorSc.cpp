@@ -2220,7 +2220,13 @@ IMPLEMENT_FUNCTION( UObject, EX_RotationConst, execRotationConst );
 void UObject::execVectorConst( FFrame& Stack, RESULT_DECL )
 {
 	guardSlow(UObject::execVectorConst);
+#ifdef PLATFORM_DREAMCAST
+	FVector Temp;
+	__builtin_memcpy(&Temp, Stack.Code, sizeof(FVector));
+	*(FVector*)Result = Temp;
+#else
 	*(FVector*)Result = *(FVector*)Stack.Code;
+#endif
 	Stack.Code += sizeof(FVector);
 	unguardexecSlow;
 }

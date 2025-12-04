@@ -332,6 +332,7 @@ UBOOL UPVRRenderDevice::Init( UViewport* InViewport, INT NewX, INT NewY, INT New
 			dbgio_dev_select( "null" );
 	}
 
+
     pvr_init(&params);
     InitScreenViewMatrix();
 	SupportsFogMaps = false; // true;
@@ -1027,14 +1028,14 @@ void UPVRRenderDevice::SetSceneNode( FSceneNode* Frame )
         CurrentSceneNode.SizeX = Viewport->SizeX;
         CurrentSceneNode.SizeY = Viewport->SizeY;
     }
-
+#if 0 // maximqad: todo / fix that
 	if( Frame->Level )
 	{
 		AZoneInfo* ZoneInfo = (AZoneInfo*)Frame->Level->GetZoneActor( Frame->ZoneNumber );
 		const UBOOL bIsSky = ( ZoneInfo && ZoneInfo->SkyZone && ZoneInfo->IsA( ASkyZoneInfo::StaticClass() ) );
 		CurrentSceneNode.bIsSky = bIsSky;
 	}
-
+#endif
 	if( Frame->FX != CurrentSceneNode.FX || Frame->FY != CurrentSceneNode.FY ||
 			Viewport->Actor->FovAngle != CurrentSceneNode.FovAngle )
 	{
