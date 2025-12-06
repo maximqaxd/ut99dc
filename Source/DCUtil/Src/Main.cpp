@@ -344,8 +344,14 @@ UBOOL FDCUtil::ConvertMeshPkg( const FString& PkgPath, UPackage* Pkg )
 						   MeshName == TEXT("TrophyMale1") ||
 						   MeshName == TEXT("TrophyBoss") ||
 						   MeshName == TEXT("TrophyFemale1") ||
-						   MeshName == TEXT("TrophyFemale2") ||
-						   MeshName == TEXT("TrophyMale2"));
+						   MeshName == TEXT("WHHand") ||
+						   MeshName == TEXT("WHPick") ||
+						   MeshName == TEXT("WHHand") ||
+						   MeshName == TEXT("Trans3loc") ||
+						   MeshName == TEXT("TCowMesh") ||
+						   MeshName == TEXT("tnalimesh") ||
+						   MeshName == TEXT("tnalimesh") ||
+						   MeshName == TEXT("TSkM"));
 
 		if (ShouldNuke)
 		{
