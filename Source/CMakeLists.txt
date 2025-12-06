@@ -43,8 +43,8 @@ if(PLATFORM_DREAMCAST)
   set(LOW_MEMORY ON)
   set(BUILD_EDITOR OFF) 
   set(BUILD_NOPENALDRV OFF)
-  set(BUILD_NULLSOUNDDRV ON)
-  set(BUILD_AICADRV OFF)
+  set(BUILD_NULLSOUNDDRV OFF)
+  set(BUILD_AICADRV ON)
   set(BUILD_NOPENGLESDRV OFF)
   set(BUILD_GLDCDRV OFF)
   set(BUILD_PVRDRV ON)
@@ -254,12 +254,12 @@ endif()
 
 # Subprojects
 
-set(INSTALL_TARGETS Audio Core Engine Render IpDrv Fire)
+set(INSTALL_TARGETS Core Engine Render IpDrv Fire)
 
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 add_subdirectory(Core)
-add_subdirectory(Audio)
+#add_subdirectory(Audio)
 add_subdirectory(Engine)
 add_subdirectory(Render)
 add_subdirectory(IpDrv)
@@ -295,6 +295,12 @@ if(BUILD_NULLSOUNDDRV)
   add_subdirectory(SoundDrv)
   list(APPEND INSTALL_TARGETS SoundDrv)
 endif()
+
+if(BUILD_AICADRV)
+  add_subdirectory(AICADrv)
+  list(APPEND INSTALL_TARGETS AICADrv)
+endif()
+
 if(BUILD_EDITOR)
   # GUI requires WinDrv
   add_subdirectory(Editor)
