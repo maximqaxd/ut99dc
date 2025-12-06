@@ -71,9 +71,7 @@ void ATcpLink::execBindPort( FFrame& Stack, RESULT_DECL )
 		{
 			Socket = socket( AF_INET, SOCK_STREAM, IPPROTO_TCP );
 			INT optval = 1;
-#if _MSC_VER
-			setsockopt( Socket, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(INT) );
-#else
+#ifndef PLATFORM_DREAMCAST
 			setsockopt( Socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(INT) );
 #endif
 			if( GetSocket() != INVALID_SOCKET )

@@ -311,16 +311,19 @@ class DLL_EXPORT_CLASS UTcpNetDriver : public UNetDriver
 			Error = FString::Printf( TEXT("WinSock: socket failed (%i)"), SocketError() );
 			return 0;
 		}
+#ifndef PLATFORM_DREAMCAST
 		UBOOL TrueBuffer=1;
 		if( setsockopt( Socket, SOL_SOCKET, SO_BROADCAST, (char*)&TrueBuffer, sizeof(TrueBuffer) ) )
 		{
 			Error = FString::Printf( TEXT("%s: setsockopt SO_BROADCAST failed (%i)"), SOCKET_API, SocketError() );
 			return 0;
 		}
+#endif
+#ifndef PLATFORM_DREAMCAST
 		UBOOL Yes=1;
 		if( setsockopt( Socket, SOL_SOCKET, SO_REUSEADDR, (char*)&Yes, sizeof(Yes) ) )
 			debugf(TEXT("setsockopt with SO_REUSEADDR failed"));
-
+#endif
 		// Increase socket queue size, because we are polling rather than threading
 		// and thus we rely on Windows Sockets to buffer a lot of data on the server.
 		INT RecvSize = Connect ? 0x8000 : 0x20000, SizeSize=sizeof(RecvSize);

@@ -20,16 +20,31 @@ DWORD STDCALL ResolveThreadEntry( void* Arg )
 {
 	FResolveInfo* Info = (FResolveInfo*)Arg;
 	IpSetInt( Info->Addr, 0 );
+#ifdef PLATFORM_DREAMCAST
+	// On Dreamcast, get IP from network device instead of DNS lookup
+	if( net_default_dev != NULL )
+	{
+		IpSetBytes( Info->Addr,
+			net_default_dev->ip_addr[0],
+			net_default_dev->ip_addr[1],
+			net_default_dev->ip_addr[2],
+			net_default_dev->ip_addr[3] );
+	}
+	else
+	{
+		appSprintf( Info->Error, TEXT("Network device not initialized") );
+	}
+#else
 	HOSTENT* HostEnt = NULL;
 	INT e = 0;
 	for( INT i=0; i<3; i++)
 	{
-		HostEnt = gethostbyname( appToAnsi(Info->HostName) ); 
+		HostEnt = gethostbyname( appToAnsi(Info->HostName) );
 		if( HostEnt )
 			break;
 		e = WSAGetLastError();
 		if( e == WSAHOST_NOT_FOUND || e == WSANO_DATA)
-			break;		
+			break;
 		appSleep(1);
 	}
 
@@ -37,6 +52,7 @@ DWORD STDCALL ResolveThreadEntry( void* Arg )
 		appSprintf( Info->Error, TEXT("Can't find host %s (%s)"), Info->HostName, SocketError(e) );
 	else
 		Info->Addr = *(in_addr*)( *HostEnt->h_addr_list );
+#endif
 	Info->ThreadId = 0;
 	return 0;
 }

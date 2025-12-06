@@ -660,6 +660,12 @@ CORE_API const TCHAR* appComputerName()
 	if( !Result[0] )
 	{
 #ifdef PLATFORM_DREAMCAST
+	net_ipv4_get_stats();
+	if (!net_default_dev)
+	{
+		// TODO: Modem
+		return 0;
+	}
 		appStrcpy( Result, "localhost" );
 #else
 		gethostname( Result, sizeof(Result) );
