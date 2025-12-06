@@ -137,7 +137,11 @@ template <class T> INT ExpandDb( TArray<T>& Array, INT Slack, INT MaxCount )
 	guard(ExpandDb);
 
 	INT Index = Array.Num();
+#ifdef PLATFORM_DREAMCAST
+	INT Add   = Min<INT>(Array.Num() + Slack, MaxCount) - Array.Num();
+#else
 	INT Add   = Min<INT>(2*Array.Num() + Slack, MaxCount) - Array.Num();
+#endif
 	if( Add > 0 )
 		Array.AddZeroed( Add );
 	Array.Shrink();
@@ -274,7 +278,11 @@ void FMovingBrushTracker::Update( AActor* InActor )
 		{
 			FBspNode* Node = &Level->Model->Nodes(iNode);
 			ForceGroupFlush( iNode );
+#ifdef PLATFORM_DREAMCAST
+			iNode = (INT)Node->iRenderBound;
+#else
 			iNode = Node->iRenderBound;
+#endif
 		}
 	}
 
@@ -320,17 +328,37 @@ void FMovingBrushTracker::Update( AActor* InActor )
 			INT iSurf                              = Poly->iLink;
 			FBspSurf* Surf                         = &Level->Model->Surfs(iSurf);
 			FPolyNormal                            = Poly->Normal;
+#ifdef PLATFORM_DREAMCAST
+			Level->Model->Points ((INT)Surf->pBase    ) = Poly->Base;
+			Level->Model->Vectors((INT)Surf->vNormal  ) = Poly->Normal;
+			Level->Model->Vectors((INT)Surf->vTextureU) = Poly->TextureU;
+			Level->Model->Vectors((INT)Surf->vTextureV) = Poly->TextureV;
+#else
 			Level->Model->Points (Surf->pBase    ) = Poly->Base;
 			Level->Model->Vectors(Surf->vNormal  ) = Poly->Normal;
 			Level->Model->Vectors(Surf->vTextureU) = Poly->TextureU;
 			Level->Model->Vectors(Surf->vTextureV) = Poly->TextureV;
+#endif
 
 			// Filter the brush's FPoly through the Bsp, creating new sporadic Bsp nodes (and their 
 			// corresponding VertPools and points) for all outside leaves the FPoly fragments fall into:
 			if( Level->Model->Nodes.Num() > 0 )
 				FilterFPoly( iSurf, 0, INDEX_NONE, Poly, 1 );
 		}
+#ifdef PLATFORM_DREAMCAST
+		if( iActorNodePrevLink == &AddActor->Brush->MoverLink )
+		{
+			// Writing to MoverLink (INT field) - safe to write INT
+			*iActorNodePrevLink = INDEX_NONE;
+		}
+		else
+		{
+			// Writing to iRenderBound (SWORD field) - must write as SWORD
+			*((SWORD*)iActorNodePrevLink) = (SWORD)INDEX_NONE;
+		}
+#else
 		*iActorNodePrevLink = INDEX_NONE;
+#endif
 
 		// Tag all newly-added nodes as non-new.
 		INT iNode = Brush->MoverLink;
@@ -339,7 +367,11 @@ void FMovingBrushTracker::Update( AActor* InActor )
 			FBspNode* Node   = &Level->Model->Nodes(iNode);
 			check(NodeMaps(iNode-iOriginalTopNode).Actor==Actor);
 			Node->NodeFlags &= ~NF_IsNew;
-			iNode            = Node->iRenderBound;
+#ifdef PLATFORM_DREAMCAST
+			iNode = (INT)Node->iRenderBound;
+#else
+			iNode = Node->iRenderBound;
+#endif
 		}
 		Mark.Pop();
 	}
@@ -391,7 +423,11 @@ FMovingBrushTracker::FMovingBrushTracker( ULevel* ThisLevel )
 
 	// Allocate changing structures.
 	iNodeRover		       = ExpandDb( Level->Model->Nodes, 512, MAX_NODES );
+#ifdef PLATFORM_DREAMCAST
+	iVertRover		       = ExpandDb( Level->Model->Verts, 64, MAXSWORD    );
+#else
 	iVertRover		       = ExpandDb( Level->Model->Verts, 512, MAXINT    );
+#endif
 	AllocDbThing( NodeMaps, Level->Model->Nodes,  iOriginalTopNode );
 	VertPoolOwners.Empty    ( Level->Model->Verts.Num() - iOriginalTopVert );
 	VertPoolOwners.AddZeroed( Level->Model->Verts.Num() - iOriginalTopVert );
@@ -649,8 +685,28 @@ void FMovingBrushTracker::AddPolyFragment
 
 	// Update linked lists.
 	Parent->iChild[IsFront] = iNode;
-	*iActorNodePrevLink     = iNode;
-	iActorNodePrevLink      = &Node->iRenderBound;
+#ifdef PLATFORM_DREAMCAST
+	// On Dreamcast, iRenderBound is SWORD (2 bytes), not INT (4 bytes)
+	// We can't write INT directly to SWORD field through INT* pointer - it causes unaligned access
+	// Check if we're writing to MoverLink (INT) or iRenderBound (SWORD)
+	// MoverLink is in ABrush, iRenderBound is in FBspNode
+	// We can detect by checking if iActorNodePrevLink points to a SWORD field
+	// For now, we'll write as SWORD and cast the pointer appropriately
+	if( iActorNodePrevLink == (INT*)&AddActor->Brush->MoverLink )
+	{
+		// Writing to MoverLink (INT field) - safe to write INT
+		*iActorNodePrevLink = iNode;
+	}
+	else
+	{
+		// Writing to iRenderBound (SWORD field) - must write as SWORD
+		*((SWORD*)iActorNodePrevLink) = (SWORD)iNode;
+	}
+	iActorNodePrevLink = (INT*)&Node->iRenderBound;
+#else
+	*iActorNodePrevLink = iNode;
+	iActorNodePrevLink  = &Node->iRenderBound;
+#endif
 
 	unguard;
 }
@@ -684,11 +740,19 @@ FilterLoop:
 	{
 	Front:
 		Outside = Outside || Node->IsCsg();
+	#ifdef PLATFORM_DREAMCAST
+		if( (INT)Node->iFront != INDEX_NONE )
+		{
+			iNode = (INT)Node->iFront;
+			goto FilterLoop;
+		}
+#else
 		if( Node->iFront != INDEX_NONE )
 		{
 			iNode = Node->iFront;
 			goto FilterLoop;
 		}
+#endif
 		else if( Outside )
 			AddPolyFragment( iAddSurf, iNode, iCoplanarParent, 1, EdPoly );
 	}
@@ -696,11 +760,19 @@ FilterLoop:
 	{
 	Back:
 		Outside = Outside && !Node->IsCsg();
+#ifdef PLATFORM_DREAMCAST
+		if( (INT)Node->iBack != INDEX_NONE )
+		{
+			iNode = (INT)Node->iBack;
+			goto FilterLoop;
+		}
+#else
 		if( Node->iBack != INDEX_NONE )
 		{
 			iNode = Node->iBack;
 			goto FilterLoop;
 		}
+#endif
 		else if( Outside )
 			AddPolyFragment( iAddSurf, iNode, iCoplanarParent, 0, EdPoly );
 	}
@@ -713,8 +785,13 @@ FilterLoop:
 	else if( SplitResult == SP_Split )
 	{
 		// Handle front fragment.
+#ifdef PLATFORM_DREAMCAST
+		if( (INT)Node->iFront != INDEX_NONE )
+			FilterFPoly( iAddSurf, (INT)Node->iFront, iCoplanarParent, TempFrontEdPoly, Outside || Node->IsCsg() );
+#else
 		if( Node->iFront != INDEX_NONE )
 			FilterFPoly( iAddSurf, Node->iFront, iCoplanarParent, TempFrontEdPoly, Outside || Node->IsCsg() );
+#endif
 		else if( Outside || Node->IsCsg() )
 			AddPolyFragment( iAddSurf, iNode, iCoplanarParent, 1, TempFrontEdPoly );
 
@@ -741,12 +818,21 @@ void FMovingBrushTracker::ForceGroupFlush( INT iNode )
 	if( !(Node.NodeFlags & NF_IsNew) )
 	{
 		Node.NodeFlags |= NF_IsNew;
+#ifdef PLATFORM_DREAMCAST
+		if( (INT)Node.iFront!=INDEX_NONE )
+			ForceGroupFlush( (INT)Node.iFront );
+		if( (INT)Node.iBack!=INDEX_NONE )
+			ForceGroupFlush( (INT)Node.iBack );
+		if( (INT)Node.iPlane!=INDEX_NONE )
+			ForceGroupFlush( (INT)Node.iPlane );
+#else
 		if( Node.iFront!=INDEX_NONE )
 			ForceGroupFlush( Node.iFront );
 		if( Node.iBack!=INDEX_NONE )
 			ForceGroupFlush( Node.iBack );
 		if( Node.iPlane!=INDEX_NONE )
 			ForceGroupFlush( Node.iPlane );
+#endif
 
 		AActor* OwnerActor = NodeMaps(iNode-iOriginalTopNode).Actor;
 		if( OwnerActor )
@@ -771,9 +857,15 @@ void FMovingBrushTracker::FlushActorBrush( AMover* Actor )
 		FBspNode* Parent = &Level->Model->Nodes(iParent);
 
 		// Remove references to this node from its parents.
+#ifdef PLATFORM_DREAMCAST
+		if	   ( (INT)Parent->iFront==iNode ) Parent->iFront=(SWORD)INDEX_NONE;
+		else if( (INT)Parent->iBack ==iNode ) Parent->iBack =(SWORD)INDEX_NONE;
+		else if( (INT)Parent->iPlane==iNode ) Parent->iPlane=(SWORD)INDEX_NONE;
+#else
 		if	   ( Parent->iFront==iNode ) Parent->iFront=INDEX_NONE;
 		else if( Parent->iBack ==iNode ) Parent->iBack =INDEX_NONE;
 		else if( Parent->iPlane==iNode ) Parent->iPlane=INDEX_NONE;
+#endif
 
 		// Free all sporadic data.
 		FVert* VertPool = &Level->Model->Verts( Node->iVertPool );
@@ -782,7 +874,11 @@ void FMovingBrushTracker::FlushActorBrush( AMover* Actor )
 
 		FreeVertPoolIndex( Node->iVertPool, Node->NumVertices );
 		NodeMaps( iNode-iOriginalTopNode ) = FActorIndex();
+#ifdef PLATFORM_DREAMCAST
+		iNode = (INT)Node->iRenderBound;
+#else
 		iNode = Node->iRenderBound;
+#endif
 	}
 	Actor->Brush->MoverLink = INDEX_NONE;
 	unguard;

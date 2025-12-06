@@ -107,7 +107,11 @@ struct FBoxCheckInfo
 	void SetupHulls( const FBspNode& Node )
 	{
 		// Get nodes on this leaf's collision hull.
+#ifdef PLATFORM_DREAMCAST
+		HullNodes = &Model.LeafHulls( (INT)Node.iCollisionBound );
+#else
 		HullNodes = &Model.LeafHulls( Node.iCollisionBound );
+#endif
 		for( NumHulls=0; HullNodes[NumHulls]!=INDEX_NONE && NumHulls<ARRAY_COUNT(Hulls); NumHulls++ )
 		{
 			FPlane& Hull = Hulls[NumHulls];
@@ -123,7 +127,11 @@ struct FBoxCheckInfo
 		}
 
 		// Get precomputed maxima.
-		const FLOAT* Temp = (FLOAT*)&Model.LeafHulls( Node.iCollisionBound + NumHulls + 1);
+#ifdef PLATFORM_DREAMCAST
+		const FLOAT *Temp = (FLOAT*)&Model.LeafHulls( (INT)Node.iCollisionBound + NumHulls + 1);
+#else
+		const FLOAT *Temp = (FLOAT*)&Model.LeafHulls( Node.iCollisionBound + NumHulls + 1);
+#endif
 		Box.Min.X = Temp[0]; Box.Min.Y = Temp[1]; Box.Min.Z = Temp[2];
 		Box.Max.X = Temp[3]; Box.Max.Y = Temp[4]; Box.Max.Z = Temp[5];
 	}
@@ -252,17 +260,29 @@ struct FBoxPointCheckInfo : public FBoxCheckInfo
 
 			// Recurse with front.
 			if( Dist > -PushOut )
-				if( !BoxPointCheck( iNode, Node.iFront, Outside || Node.IsCsg(ExtraFlags) ) )
+#ifdef PLATFORM_DREAMCAST
+			if( !BoxPointCheck( iNode, (INT)Node.iFront, Outside || Node.IsCsg(ExtraFlags) ) )
+#else
+			if( !BoxPointCheck( iNode, Node.iFront, Outside || Node.IsCsg(ExtraFlags) ) )
+#endif
 					Result = 0;
 
 			// Loop with back.
 			iParent = iNode;
+#ifdef PLATFORM_DREAMCAST
+			iNode   = (INT)Node.iBack;
+#else
 			iNode   = Node.iBack;
+#endif
 			Outside = Outside && !Node.IsCsg(ExtraFlags);
 			if( Dist > PushOut )
 				goto NoBlock;
 		}
+#ifdef PLATFORM_DREAMCAST
+		if( !Outside && (INT)Model.Nodes(iParent).iCollisionBound!=INDEX_NONE )
+#else
 		if( !Outside && Model.Nodes(iParent).iCollisionBound!=INDEX_NONE )
+#endif
 		{
 #if 0
 			while( iParent != INDEX_NONE )
@@ -333,7 +353,11 @@ UBOOL UModel::PointCheck
 				const FBspNode& Node = Nodes(iNode);
 				IsFront = Node.Plane.TransformPlaneByOrtho(Coords).PlaneDot(Location) > 0.0;
 				Outside = Node.ChildOutside( IsFront, Outside );
+#ifdef PLATFORM_DREAMCAST
+				iNode   = (INT)Node.iChild[IsFront];
+#else
 				iNode   = Node.iChild[IsFront];
+#endif
 			} while( iNode != INDEX_NONE );
 			Hit.Item = iPrevNode*2 + IsFront;
 		}
@@ -417,13 +441,21 @@ UBOOL LineCheck
 		{
 			// Both points are in front.
 			Outside |= Node->IsCsg(InNodeFlags & ~NF_BrightCorners);
+#ifdef PLATFORM_DREAMCAST
+			iNode    = (INT)Node->iFront;
+#else
 			iNode    = Node->iFront;
+#endif
 		}
 		else if( Dist1 < 0.001 && Dist2 < 0.001 )
 		{
 			// Both points are in back.
 			Outside &= !Node->IsCsg(InNodeFlags & ~NF_BrightCorners);
+#ifdef PLATFORM_DREAMCAST
+			iNode    = (INT)Node->iBack;
+#else
 			iNode    = Node->iBack;
+#endif
 		}
 		else
 		{
@@ -438,7 +470,11 @@ UBOOL LineCheck
 			// Loop with back part.
 			Outside = Node->ChildOutside( 1-FrontFirst, Outside, InNodeFlags );
 			iHit    = iNode;
+#ifdef PLATFORM_DREAMCAST
+			iNode   = (INT)Node->iChild[1-FrontFirst];
+#else
 			iNode   = Node->iChild[1-FrontFirst];
+#endif
 			Start   = Middle;
 		}
 	}
@@ -530,18 +566,29 @@ struct FBoxLineCheckInfo : public FBoxCheckInfo
 			UBOOL           FrontFirst = D0 >= D1;
 
 			// Traverse down nearest side then furthest side.
-			if( Use[FrontFirst] )
-				BoxLineCheck( iNode, Node.iChild[FrontFirst], FrontFirst, Node.ChildOutside(FrontFirst, Outside) );
+#ifdef PLATFORM_DREAMCAST
+			BoxLineCheck( iNode, (INT)Node.iChild[FrontFirst], FrontFirst, Node.ChildOutside(FrontFirst, Outside) );
+#else
+			BoxLineCheck( iNode, Node.iChild[FrontFirst], FrontFirst, Node.ChildOutside(FrontFirst, Outside) );
+#endif
 			if( !Use[1-FrontFirst] )
 				return;
 
 			iParent = iNode;
+#ifdef PLATFORM_DREAMCAST
+			iNode   = (INT)Node.iChild[ 1-FrontFirst ];
+#else
 			iNode   = Node.iChild[ 1-FrontFirst ];
+#endif
 			Outside = Node.ChildOutside( 1-FrontFirst, Outside );
 			IsFront = !FrontFirst;
 		}
 		const FBspNode& Parent = Model.Nodes(iParent);
+#ifdef PLATFORM_DREAMCAST
+		if( Outside==0 && (INT)Parent.iCollisionBound!=INDEX_NONE )
+#else
 		if( Outside==0 && Parent.iCollisionBound!=INDEX_NONE )
+#endif
 		{
 			// Init.
 			SetupHulls(Parent);
@@ -658,9 +705,17 @@ FPointRegion UModel::PointRegion( AZoneInfo* Zone, FVector Location ) const
 			IsFront = Node.Plane.PlaneDot(Location) >= 0.0;
 			Outside = Node.ChildOutside(IsFront,Outside);
 			iParent = iNode;
+#ifdef PLATFORM_DREAMCAST
+			iNode   = (INT)Node.iChild[IsFront];
+#else
 			iNode   = Node.iChild[IsFront];
+#endif
 		}
+#ifdef PLATFORM_DREAMCAST
+		Result.iLeaf      = (INT)Nodes(iParent).iLeaf[IsFront];
+#else
 		Result.iLeaf      = Nodes(iParent).iLeaf[IsFront];
+#endif
 		Result.ZoneNumber = NumZones ? Nodes(iParent).iZone[IsFront] : 0;
 		Result.Zone       = Zones[Result.ZoneNumber].ZoneActor ? Zones[Result.ZoneNumber].ZoneActor : Zone;
 	}
@@ -690,6 +745,65 @@ static FLOAT FindNearestVertex
 	while( iNode != INDEX_NONE )
 	{
 		const FBspNode	*Node	= &Model.Nodes(iNode);
+#ifdef PLATFORM_DREAMCAST
+		INT			    iBack   = (INT)Node->iBack;
+		FLOAT PlaneDist = Node->Plane.PlaneDot( SourcePoint );
+		if( PlaneDist>=-MinRadius && (INT)Node->iFront!=INDEX_NONE )
+		{
+			// Check front.
+			FLOAT TempRadius = FindNearestVertex (Model,SourcePoint,DestPoint,MinRadius,(INT)Node->iFront,pVertex);
+			if (TempRadius >= 0.0) {ResultRadius = TempRadius; MinRadius = TempRadius;};
+		}
+		if( PlaneDist>-MinRadius && PlaneDist<=MinRadius )
+		{
+			// Check this node's poly's vertices.
+			while( iNode != INDEX_NONE )
+			{
+				// Loop through all coplanars.
+				Node                    = &Model.Nodes(iNode);
+#ifdef PLATFORM_DREAMCAST
+				const FBspSurf* Surf    = &Model.Surfs((INT)Node->iSurf);
+#else
+				const FBspSurf* Surf    = &Model.Surfs((INT)Node->iSurf);
+#endif
+				const FVector *Base	    = &Model.Points(Surf->pBase);
+				FLOAT TempRadiusSquared	= FDistSquared( SourcePoint, *Base );
+
+				if( TempRadiusSquared < Square(MinRadius) )
+				{
+					pVertex = Surf->pBase;
+					ResultRadius = MinRadius = appSqrt(TempRadiusSquared);
+					DestPoint = *Base;
+				}
+
+				const FVert *VertPool = &Model.Verts(Node->iVertPool);
+				for (BYTE B=0; B<Node->NumVertices; B++)
+				{
+#ifdef PLATFORM_DREAMCAST
+					const FVector *Vertex   = &Model.Points((INT)VertPool->pVertex);
+					FLOAT TempRadiusSquared = FDistSquared( SourcePoint, *Vertex );
+					if( TempRadiusSquared < Square(MinRadius) )
+					{
+						pVertex      = (INT)VertPool->pVertex;
+#else
+					const FVector *Vertex   = &Model.Points(VertPool->pVertex);
+					FLOAT TempRadiusSquared = FDistSquared( SourcePoint, *Vertex );
+					if( TempRadiusSquared < Square(MinRadius) )
+					{
+						pVertex      = VertPool->pVertex;
+#endif
+						ResultRadius = MinRadius = appSqrt(TempRadiusSquared);
+						DestPoint    = *Vertex;
+					}
+					VertPool++;
+				}
+				iNode = (INT)Node->iPlane;
+			}
+		}
+		if( PlaneDist > MinRadius )
+			break;
+		iNode = iBack;
+#else
 		INT			    iBack   = Node->iBack;
 		FLOAT PlaneDist = Node->Plane.PlaneDot( SourcePoint );
 		if( PlaneDist>=-MinRadius && Node->iFront!=INDEX_NONE )
@@ -735,6 +849,7 @@ static FLOAT FindNearestVertex
 		if( PlaneDist > MinRadius )
 			break;
 		iNode = iBack;
+#endif
 	}
 	return ResultRadius;
 }
@@ -773,7 +888,11 @@ void PrecomputeSphereFilter( UModel& Model, INT iNode, const FPlane& Sphere )
 		if( Dist < -Sphere.W )
 		{
 			Node->NodeFlags |= NF_IsBack;
-			iNode = Node->iBack;
+#ifdef PLATFORM_DREAMCAST
+			iNode            = (INT)Node->iBack;
+#else
+			iNode            = Node->iBack;
+#endif
 		}
 		else
 		{	
@@ -781,7 +900,11 @@ void PrecomputeSphereFilter( UModel& Model, INT iNode, const FPlane& Sphere )
 				Node->NodeFlags |= NF_IsFront;
 			else if( Node->iBack != INDEX_NONE )
 				PrecomputeSphereFilter( Model, Node->iBack, Sphere );
-			iNode = Node->iFront;
+#ifdef PLATFORM_DREAMCAST
+			iNode            = (INT)Node->iFront;
+#else
+			iNode            = Node->iFront;
+#endif
 		}
 	}
 	while( iNode != INDEX_NONE );

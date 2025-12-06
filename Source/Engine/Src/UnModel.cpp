@@ -16,9 +16,35 @@ ENGINE_API FArchive& operator<<( FArchive& Ar, FBspSurf& Surf )
 {
 	guard(FBspSurf<<);
 	Ar << Surf.Texture;
-	Ar << Surf.PolyFlags << AR_INDEX(Surf.pBase) << AR_INDEX(Surf.vNormal);
+	Ar << Surf.PolyFlags;
+#ifdef PLATFORM_DREAMCAST
+	INT pBase = 0, vNormal = 0, vTextureU = 0, vTextureV = 0, iLightMap = 0, iBrushPoly = 0;
+	if( Ar.IsSaving() )
+	{
+		pBase = (INT)Surf.pBase;
+		vNormal = (INT)Surf.vNormal;
+		vTextureU = (INT)Surf.vTextureU;
+		vTextureV = (INT)Surf.vTextureV;
+		iLightMap = (INT)Surf.iLightMap;
+		iBrushPoly = (INT)Surf.iBrushPoly;
+	}
+	Ar << AR_INDEX(pBase) << AR_INDEX(vNormal);
+	Ar << AR_INDEX(vTextureU) << AR_INDEX(vTextureV);
+	Ar << AR_INDEX(iLightMap) << AR_INDEX(iBrushPoly);
+	if( Ar.IsLoading() )
+	{
+		Surf.pBase = (SWORD)pBase;
+		Surf.vNormal = (SWORD)vNormal;
+		Surf.vTextureU = (SWORD)vTextureU;
+		Surf.vTextureV = (SWORD)vTextureV;
+		Surf.iLightMap = (SWORD)iLightMap;
+		Surf.iBrushPoly = (SWORD)iBrushPoly;
+	}
+#else
+	Ar << AR_INDEX(Surf.pBase) << AR_INDEX(Surf.vNormal);
 	Ar << AR_INDEX(Surf.vTextureU) << AR_INDEX(Surf.vTextureV);
 	Ar << AR_INDEX(Surf.iLightMap) << AR_INDEX(Surf.iBrushPoly);
+#endif
 	Ar << Surf.PanU << Surf.PanV;
 	Ar << Surf.Actor;
 	if( Ar.IsLoading() )
@@ -49,6 +75,50 @@ ENGINE_API FArchive& operator<<( FArchive& Ar, FPoly& Poly )
 
 ENGINE_API FArchive& operator<<( FArchive& Ar, FBspNode& N )
 {
+#ifdef PLATFORM_DREAMCAST
+	guard(FBspNode<<);
+	Ar << N.Plane << N.ZoneMask << N.NodeFlags << AR_INDEX(N.iVertPool);
+	INT iSurf = 0, iChild0 = 0, iChild1 = 0, iChild2 = 0, iCollisionBound = 0, iRenderBound = 0;
+	if( Ar.IsSaving() )
+	{
+		iSurf = (INT)N.iSurf;
+		iChild0 = (INT)N.iChild[0];
+		iChild1 = (INT)N.iChild[1];
+		iChild2 = (INT)N.iChild[2];
+		iCollisionBound = (INT)N.iCollisionBound;
+		iRenderBound = (INT)N.iRenderBound;
+	}
+	Ar << AR_INDEX(iSurf) << AR_INDEX(iChild0) << AR_INDEX(iChild1) << AR_INDEX(iChild2);
+	Ar << AR_INDEX(iCollisionBound) << AR_INDEX(iRenderBound);
+	if( Ar.IsLoading() )
+	{
+		N.iSurf = (SWORD)iSurf;
+		N.iChild[0] = (SWORD)iChild0;
+		N.iChild[1] = (SWORD)iChild1;
+		N.iChild[2] = (SWORD)iChild2;
+		N.iCollisionBound = (SWORD)iCollisionBound;
+		N.iRenderBound = (SWORD)iRenderBound;
+	}
+	Ar << N.iZone[0] << N.iZone[1];
+	Ar << N.NumVertices;
+	// iLeaf was serialized directly as INT in original, now SWORD - convert to INT for serialization
+	INT iLeaf0 = 0, iLeaf1 = 0;
+	if( Ar.IsSaving() )
+	{
+		iLeaf0 = (INT)N.iLeaf[0];
+		iLeaf1 = (INT)N.iLeaf[1];
+	}
+	Ar << iLeaf0 << iLeaf1;
+	if( Ar.IsLoading() )
+	{
+		N.iLeaf[0] = (SWORD)iLeaf0;
+		N.iLeaf[1] = (SWORD)iLeaf1;
+	}
+	if( Ar.IsLoading() )
+		N.NodeFlags &= ~(NF_IsNew|NF_IsFront|NF_IsBack);
+	return Ar;
+	unguard;
+#else
 	guard(FBspNode<<);
 	Ar << N.Plane << N.ZoneMask << N.NodeFlags << AR_INDEX(N.iVertPool) << AR_INDEX(N.iSurf);
 	Ar << AR_INDEX(N.iChild[0]) << AR_INDEX(N.iChild[1]) << AR_INDEX(N.iChild[2]);
@@ -60,6 +130,7 @@ ENGINE_API FArchive& operator<<( FArchive& Ar, FBspNode& N )
 		N.NodeFlags &= ~(NF_IsNew|NF_IsFront|NF_IsBack);
 	return Ar;
 	unguard;
+#endif
 }
 
 /*---------------------------------------------------------------------------------------

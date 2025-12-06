@@ -107,6 +107,7 @@ void HandleIrqException( irq_t Code, irq_context_t* Context, void* Data )
 	bfont_draw_str_vram_fmt( 8, 8, true, "UNHANDLED EXCEPTION 0x%08x", Code );
 	bfont_draw_str_vram_fmt( 8, 32, true, "PC: %p PR: %p", (void*)Context->pc, (void*)Context->pr );
 	bfont_draw_str_vram_fmt( 8, 56, true, "SR: %p R0: %p", (void*)Context->sr, (void*)Context->r[0] );
+	bfont_draw_str_vram_fmt( 8, 80, true, "PROBABLY OUT OF MEMORY");
 
 	arch_stk_trace_at( Context->r[14], 0 );
 
@@ -300,7 +301,7 @@ int main( int argc, char* argv[] )
 	// Redirect dbgio to the framebuffer if we're not already using dcload.
 	GStartupDbgDev = dbgio_dev_get();
 	if( !GStartupDbgDev || !appStrstr( GStartupDbgDev, "dcl" ) )
-		dbgio_dev_select( "scif" );
+		dbgio_dev_select( "fb" );
 	assert_set_handler( HandleAssertFail );
 	irq_set_handler( EXC_UNHANDLED_EXC, HandleIrqException, nullptr );
 #ifdef DREAMCAST_USE_FATFS
@@ -370,8 +371,11 @@ int main( int argc, char* argv[] )
 	GIsClient		= !ParseParam(appCmdLine(), TEXT("SERVER"));
 	GIsEditor		= 0;
 	GIsScriptable	= 1;
+#ifdef PLATFORM_DREAMCAST
+	GLazyLoad  		= 1;
+#else
 	GLazyLoad		= !GIsClient || ParseParam(appCmdLine(), TEXT("LAZY"));
-
+#endif
 #ifdef PLATFORM_DREAMCAST
 		Warn.AuxOut = GLog;
 		GLog		= &Warn;

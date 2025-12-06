@@ -60,13 +60,6 @@ void FArray::Realloc( INT ElementSize )
 {
 	guard(FArray::Realloc);
 	INT TotalSize = ArrayMax * ElementSize;
-#ifdef PLATFORM_DREAMCAST
-	if( TotalSize >= 65536 )
-	{
-		printf("[BIGARRAY] %d elements * %d bytes = %d total\n", ArrayMax, ElementSize, TotalSize);
-		fflush(stdout);
-	}
-#endif
 	Data = appRealloc( Data, TotalSize, TEXT("FArray") );
 	unguardf(( TEXT("%i*%i"), ArrayMax, ElementSize ));
 }

@@ -93,6 +93,46 @@ struct ENGINE_API FPointRegion
 // is an index to a coplanar polygon in the Bsp.  All polygons that are iPlane
 // children can only have iPlane children themselves, not fronts or backs.
 //
+#ifdef PLATFORM_DREAMCAST
+class FBspNode // 64 bytes
+{
+public:
+	enum {MAX_NODE_VERTICES=16};	// Max vertices in a Bsp node, pre clipping.
+	enum {MAX_FINAL_VERTICES=24};	// Max vertices in a Bsp node, post clipping.
+	enum {MAX_ZONES=64};			// Max zones per level.
+
+	// Persistent information.
+	FPlane			Plane;			// 16 Plane the node falls into (X, Y, Z, W).
+	QWORD			ZoneMask;		// 8  Bit mask for all zones at or below this node (up to 64).
+	INT				iVertPool;		// 4  Index of first vertex in vertex pool, =iTerrain if NumVertices==0 and NF_TerrainFront.
+	SWORD				iSurf;		// 2  Index to surface information.
+
+	// iBack:  2  Index to node in front (in direction of Normal).
+	// iFront: 2 Index to node in back  (opposite direction as Normal).
+	// iPlane: 2  Index to next coplanar poly in coplanar list.
+	union { SWORD iBack; SWORD iChild[1]; };
+	        SWORD iFront;
+			SWORD iPlane;
+
+	SWORD				iCollisionBound;// 2  Collision bound.
+	SWORD				iRenderBound;	// 2  Rendering bound.
+	BYTE			iZone[2];		// 2  Visibility zone in 1=front, 0=back.
+	BYTE			NumVertices;	// 1  Number of vertices in node.
+	BYTE			NodeFlags;		// 1  Node flags.
+	SWORD				iLeaf[2];		// 4  Leaf in back and front, INDEX_NONE=not a leaf.
+
+	// Functions.
+	UBOOL IsCsg( DWORD ExtraFlags=0 ) const
+	{
+		return (NumVertices>0) && !(NodeFlags & (NF_IsNew | NF_NotCsg | ExtraFlags));
+	}
+	UBOOL ChildOutside( INT iChild, UBOOL Outside, DWORD ExtraFlags=0 ) const
+	{
+		return iChild ? (Outside || IsCsg(ExtraFlags)) : (Outside && !IsCsg(ExtraFlags));
+	}
+	ENGINE_API friend FArchive& operator<<( FArchive& Ar, FBspNode& N );
+};
+#else
 class FBspNode // 64 bytes
 {
 public:
@@ -131,6 +171,7 @@ public:
 	}
 	ENGINE_API friend FArchive& operator<<( FArchive& Ar, FBspNode& N );
 };
+#endif
 
 //
 // Properties of a zone.
@@ -201,12 +242,21 @@ public:
 	// Persistent info.
 	UTexture*	Texture;		// 4 Texture map.
 	DWORD		PolyFlags;		// 4 Polygon flags.
+#ifdef PLATFORM_DREAMCAST
+	SWORD		pBase;			// 2 Polygon & texture base point index (where U,V==0,0).
+	SWORD		vNormal;		// 2 Index to polygon normal.
+	SWORD		vTextureU;		// 2 Texture U-vector index.
+	SWORD		vTextureV;		// 2 Texture V-vector index.
+	SWORD		iLightMap;		// 2 Light mesh.
+	SWORD		iBrushPoly;		// 2 Editor brush polygon index.
+#else
 	INT			pBase;			// 4 Polygon & texture base point index (where U,V==0,0).
 	INT			vNormal;		// 4 Index to polygon normal.
 	INT			vTextureU;		// 4 Texture U-vector index.
 	INT			vTextureV;		// 4 Texture V-vector index.
 	INT			iLightMap;		// 4 Light mesh.
 	INT			iBrushPoly;		// 4 Editor brush polygon index.
+#endif
 	SWORD		PanU;			// 2 U-Panning value.
 	SWORD		PanV;			// 2 V-Panning value.
 	ABrush*		Actor;			// 4 Brush actor owning this Bsp surface.
