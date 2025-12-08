@@ -216,6 +216,48 @@ class DLL_EXPORT_CLASS UTcpNetDriver : public UNetDriver
 		guard(UTcpNetDriver::TickDispatch);
 		Super::TickDispatch( DeltaTime );
 
+#ifdef PLATFORM_DREAMCAST
+		// Dreamcast: simpler non-blocking poll
+		BYTE Data[NETWORK_MAX_PACKET];
+		sockaddr_in FromAddr;
+		for( ; ; )
+		{
+			socklen_t FromSize = sizeof(FromAddr);
+			INT Size = recvfrom( Socket, (char*)Data, sizeof(Data), 0, (sockaddr*)&FromAddr, &FromSize );
+
+			if( Size==SOCKET_ERROR )
+			{
+				INT Err = WSAGetLastError();
+				if( Err==WSAEWOULDBLOCK || Err==EAGAIN || Err==EWOULDBLOCK || Err==EINPROGRESS )
+					break;
+				static UBOOL FirstError=1;
+				if( FirstError )
+				{
+					debugf( TEXT("UDP recvfrom error: %i"), Err );
+					FirstError = 0;
+				}
+				break;
+			}
+
+			UTcpipConnection* Connection = NULL;
+			if( GetServerConnection() && IpMatches(GetServerConnection()->RemoteAddr,FromAddr) )
+				Connection = GetServerConnection();
+			for( INT i=0; i<ClientConnections.Num() && !Connection; i++ )
+				if( IpMatches( ((UTcpipConnection*)ClientConnections(i))->RemoteAddr, FromAddr ) )
+					Connection = (UTcpipConnection*)ClientConnections(i);
+
+			if( !Connection && Notify->NotifyAcceptingConnection()==ACCEPTC_Accept )
+			{
+				Connection = new UTcpipConnection( Socket, this, FromAddr, USOCK_Open, 0, FURL() );
+				Connection->URL.Host = IpString(FromAddr.sin_addr);
+				Notify->NotifyAcceptedConnection( Connection );
+				ClientConnections.AddItem( Connection );
+			}
+
+			if( Connection )
+				Connection->ReceivedRawPacket( Data, Size );
+		}
+#else
 		// Process all incoming packets.
 		BYTE Data[NETWORK_MAX_PACKET];
 		sockaddr_in FromAddr;
@@ -270,6 +312,7 @@ class DLL_EXPORT_CLASS UTcpNetDriver : public UNetDriver
 			if( Connection )
 				Connection->ReceivedRawPacket( Data, Size );
 		}
+#endif
 		unguard;
 	}
 	FString LowLevelGetNetworkNumber()

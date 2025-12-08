@@ -28,11 +28,11 @@
 	#define INVALID_SOCKET		-1
 	#define SOCKET_ERROR		-1
 	//#define WSAEWOULDBLOCK		EWOULDBLOCK
-	#define WSAEWOULDBLOCK		EINPROGRESS
+	#define WSAEWOULDBLOCK		EAGAIN
 	#define WSAENOTSOCK			ENOTSOCK
 	#define WSATRY_AGAIN		TRY_AGAIN
 	#define WSAHOST_NOT_FOUND	HOST_NOT_FOUND
-	#define WSANO_DATA			HOST_NOT_FOUND
+	#define WSANO_DATA			NO_DATA
 	#define LPSOCKADDR			sockaddr*
 
 	#define closesocket			close
