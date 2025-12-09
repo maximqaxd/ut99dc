@@ -15,7 +15,10 @@ add_library(${PROJECT_NAME} ${LIB_TYPE} ${SRC_FILES})
 
 if(TARGET_IS_DREAMCAST AND NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
   # FIXME: the rest is built with -Os, but building this file with -Os causes lightmaps to break
-  set_source_files_properties("Src/UnLight.cpp" PROPERTIES COMPILE_FLAGS -O2)
+  set_source_files_properties("Src/UnLight.cpp" PROPERTIES COMPILE_FLAGS "-O3 -ffast-math -ffp-contract=fast")
+  set_source_files_properties("Src/UnMeshRn.cpp" PROPERTIES COMPILE_FLAGS "-O3 -ffast-math -ffp-contract=fast")
+  set_source_files_properties("Src/UnRender.cpp" PROPERTIES COMPILE_FLAGS "-O3 -ffast-math -ffp-contract=fast")
+  set_source_files_properties("Src/UnSpan.cpp" PROPERTIES COMPILE_FLAGS "-O3 -ffast-math -ffp-contract=fast")
 endif()
 
 target_include_directories(${PROJECT_NAME}

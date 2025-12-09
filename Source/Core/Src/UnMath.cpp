@@ -176,6 +176,52 @@ FVector FVector::SafeNormal() const
 	return FVector( X*Scale, Y*Scale, Z*Scale );
 }
 
+#if defined(PLATFORM_DREAMCAST)
+FCoords& FCoords::operator/=( const FRotator &Rot )
+{
+	// Apply inverse roll rotation.
+	FLOAT cRoll = GMath.CosTab(Rot.Roll);
+	FLOAT sRoll = GMath.SinTab(Rot.Roll);
+	*this *= FCoords
+	(
+		FVector( 0.0, 0.0, 0.0 ),
+		FVector( +1.0, -0.0, +0.0 ),
+		FVector( -0.0, +cRoll, +sRoll ),
+		FVector( +0.0, -sRoll, +cRoll )
+	);
+
+	// Apply inverse pitch rotation.
+	FLOAT cPitch = GMath.CosTab(Rot.Pitch);
+	FLOAT sPitch = GMath.SinTab(Rot.Pitch);
+	*this *= FCoords
+	(
+		FVector( 0.0, 0.0, 0.0 ),
+		FVector( +cPitch, +0.0, -sPitch ),
+		FVector( +0.0,   +1.0,  -0.0   ),
+		FVector( +sPitch, +0.0, +cPitch )
+	);
+
+	// Apply inverse yaw rotation.
+	FLOAT cYaw = GMath.CosTab(Rot.Yaw);
+	FLOAT sYaw = GMath.SinTab(Rot.Yaw);
+	*this *= FCoords
+	(
+		FVector( 0.0, 0.0, 0.0 ),
+		FVector( +cYaw, -sYaw, -0.0 ),
+		FVector( +sYaw, +cYaw, +0.0 ),
+		FVector( -0.0,  +0.0, +1.0 )
+	);
+	return *this;
+}
+
+FCoords FCoords::operator/( const FRotator &Rot ) const
+{
+	FCoords Tmp(*this);
+	Tmp /= Rot;
+	return Tmp;
+}
+#endif
+
 /*-----------------------------------------------------------------------------
 	The End.
 -----------------------------------------------------------------------------*/

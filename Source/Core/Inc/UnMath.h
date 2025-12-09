@@ -6,7 +6,8 @@
 		* Created by Tim Sweeney
 =============================================================================*/
 #ifdef PLATFORM_DREAMCAST
-#include "dc/fmath.h"
+#include <dreamcast/sh4zam/shz_scalar.hpp>
+#include <dreamcast/sh4zam/shz_trig.hpp>
 #elif defined(PLATFORM_LOW_MEMORY)
 #include <math.h>
 #endif
@@ -842,23 +843,25 @@ public:
 #ifdef PLATFORM_DREAMCAST
 	FLOAT Sqrt( int i )
 	{
-		return fsqrt( (FLOAT)i / 16384.f );
+		return shz::sqrtf_fsrra( (FLOAT)i / 16384.f );
 	}
 	FLOAT SinTab( int i )
 	{
-		return fsin( ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES );
+		const FLOAT a = ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES;
+		return shz::sinf( a );
 	}
 	FLOAT CosTab( int i )
 	{
-		return fcos( ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES );
+		const FLOAT a = ((i>>ANGLE_SHIFT)&(NUM_ANGLES-1)) * 2.f * (FLOAT)PI / (FLOAT)NUM_ANGLES;
+		return shz::cosf( a );
 	}
 	FLOAT SinFloat( FLOAT F )
 	{
-		return fsin( F );
+		return shz::sinf( F );
 	}
 	FLOAT CosFloat( FLOAT F )
 	{
-		return fcos( F );
+		return shz::cosf( F );
 	}
 #elif defined(PLATFORM_LOW_MEMORY)
 	FLOAT Sqrt( int i )
@@ -1221,6 +1224,7 @@ inline FCoords FCoords::operator*( const FVector &Point ) const
 //
 // Detransform this coordinate system by a pitch-yaw-roll rotation.
 //
+#ifndef PLATFORM_DREAMCAST
 inline FCoords& FCoords::operator/=( const FRotator &Rot )
 {
 	// Apply inverse roll rotation.
@@ -1255,7 +1259,7 @@ inline FCoords FCoords::operator/( const FRotator &Rot ) const
 {
 	return FCoords(*this) /= Rot;
 }
-
+#endif
 inline FCoords& FCoords::operator/=( const FVector &Point )
 {
 	Origin += Point;

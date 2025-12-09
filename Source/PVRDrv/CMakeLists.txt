@@ -24,6 +24,12 @@ target_include_directories(${PROJECT_NAME}
   ${KOS_BASE}/include
 )
 
+if(TARGET_IS_DREAMCAST AND NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+  # FIXME: the rest is built with -Os, but building this file with -Os causes lightmaps to break
+  set_source_files_properties("PVRDrv.cpp" PROPERTIES COMPILE_FLAGS -O3 -ffast-math -ffp-contract=fast)
+endif()
+
+
 target_link_libraries(${PROJECT_NAME} Render Engine Core)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLDCDRV_EXPORTS UPACKAGE_NAME=${PROJECT_NAME})

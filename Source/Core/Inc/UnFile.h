@@ -462,7 +462,7 @@ inline void* operator new( unsigned int Size )
 	return appMalloc( Size, TEXT("new") );
 	unguardSlow;
 }
-inline void operator delete( void* Ptr )
+inline void operator delete( void* Ptr ) noexcept
 {
 	guardSlow(delete);
 	appFree( Ptr );
@@ -482,7 +482,7 @@ inline void* operator new[]( unsigned int Size )
 	return appMalloc( Size, TEXT("new") );
 	unguardSlow;
 }
-inline void operator delete[]( void* Ptr )
+inline void operator delete[]( void* Ptr ) noexcept
 {
 	guardSlow(delete);
 	appFree( Ptr );
