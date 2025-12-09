@@ -36,15 +36,9 @@ public:
 
 	// Constants.
 	enum { BULK_ALLOC  = 1024              };
-#ifdef PLATFORM_LOW_MEMORY
-	enum { NUM_BUCKETS = 8192              };
-	enum { GRAN_XY     = 512               };
-	enum { GRAN_Z      = 512               };
-#else
 	enum { NUM_BUCKETS = 16384             };
 	enum { GRAN_XY     = 256               };
 	enum { GRAN_Z      = 256               };
-#endif
 	enum { BASIS_BITS  = 8                 };
 	enum { BASIS_MASK  = (1<<BASIS_BITS)-1 };
 	enum { XY_OFS      = 32768             };
