@@ -325,14 +325,12 @@ UBOOL UPVRRenderDevice::Init( UViewport* InViewport, INT NewX, INT NewY, INT New
 
 	// if we were using fb dbgio, disable it before initializing PVR
 	const char* DbgDev = dbgio_dev_get();
-
 	if( DbgDev && !appStrcmp( DbgDev, "fb" ) )
 	{
 		// try to drop back to whatever we had at startup first
 		if( !GStartupDbgDev || dbgio_dev_select( GStartupDbgDev ) < 0 )
 			dbgio_dev_select( "null" );
 	}
-
 
     pvr_init(&params);
     InitScreenViewMatrix();
@@ -1029,14 +1027,20 @@ void UPVRRenderDevice::SetSceneNode( FSceneNode* Frame )
         CurrentSceneNode.SizeX = Viewport->SizeX;
         CurrentSceneNode.SizeY = Viewport->SizeY;
     }
-#if 0 // maximqad: todo / fix that
-	if( Frame->Level )
+	
+	CurrentSceneNode.bIsSky = 0;
+	if( Frame->Level && Frame->Level->Model )
 	{
-		AZoneInfo* ZoneInfo = (AZoneInfo*)Frame->Level->GetZoneActor( Frame->ZoneNumber );
-		const UBOOL bIsSky = ( ZoneInfo && ZoneInfo->SkyZone && ZoneInfo->IsA( ASkyZoneInfo::StaticClass() ) );
-		CurrentSceneNode.bIsSky = bIsSky;
+		if( Frame->ZoneNumber >= 0 && Frame->ZoneNumber < ARRAY_COUNT(Frame->Level->Model->Zones) )
+		{
+			AZoneInfo* ZoneInfo = (AZoneInfo*)Frame->Level->GetZoneActor( Frame->ZoneNumber );
+			if( ZoneInfo && ZoneInfo->SkyZone && ZoneInfo->IsA( ASkyZoneInfo::StaticClass() ) )
+			{
+				CurrentSceneNode.bIsSky = 1;
+			}
+		}
 	}
-#endif
+	
 	if( Frame->FX != CurrentSceneNode.FX || Frame->FY != CurrentSceneNode.FY ||
 			Viewport->Actor->FovAngle != CurrentSceneNode.FovAngle )
 	{
