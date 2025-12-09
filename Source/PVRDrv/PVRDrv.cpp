@@ -2,6 +2,9 @@
 #include <malloc.h>
 
 #include "PVRDrvPrivate.h"
+#if defined(PLATFORM_DREAMCAST)
+#include <dreamcast/sh4zam/shz_scalar.hpp>
+#endif
 
 #define dcache_pref_block(a)	__builtin_prefetch(a)
 
@@ -62,7 +65,11 @@ static inline void DebugDumpCoords( const FCoords& C )
 
 static inline void ProjectToScreenUE( const FSceneNode* Frame, FLOAT VX, FLOAT VY, FLOAT VZ, FLOAT& SX, FLOAT& SY, FLOAT& SZ )
 {
+#if defined(PLATFORM_DREAMCAST)
+    const FLOAT InvZ = (VZ != 0.0f) ? shz::invf_fsrra(VZ) : 1.0f;
+#else
     const FLOAT InvZ = (VZ != 0.0f) ? (1.0f / VZ) : 1.0f;
+#endif
     const FLOAT RZ   = Frame->Proj.Z * InvZ;
     SX = VX * RZ + Frame->FX2;
     SY = VY * RZ + Frame->FY2;
@@ -80,6 +87,25 @@ static inline INT ClipPolyNear( const FPVRClipVert* InVerts, INT InCount, FPVRCl
     const FLOAT NearZ = 1.0f;
     if( InCount <= 0 )
         return 0;
+	// Fast path: check if all verts are inside near plane.
+	INT AllInside = 1;
+	INT AllOutside = 1;
+	for( INT i=0; i<InCount; ++i )
+	{
+		const UBOOL Inside = (InVerts[i].Z > NearZ);
+		AllInside  &= Inside;
+		AllOutside &= !Inside;
+		if( !AllInside && !AllOutside )
+			break;
+	}
+	if( AllInside )
+	{
+		for( INT i=0; i<InCount; ++i )
+			OutVerts[i] = InVerts[i];
+		return InCount;
+	}
+	if( AllOutside )
+		return 0;
     FPVRClipVert Temp[64];
     const FPVRClipVert* Src = InVerts;
     FPVRClipVert* Dst = Temp;
@@ -98,7 +124,13 @@ static inline INT ClipPolyNear( const FPVRClipVert* InVerts, INT InCount, FPVRCl
         }
         else if( SInside && !EInside )
         {
-            const FLOAT T = (NearZ - S.Z) / (E.Z - S.Z);
+			const FLOAT Numer = (NearZ - S.Z);
+			const FLOAT Denom = (E.Z - S.Z);
+#if defined(PLATFORM_DREAMCAST)
+			const FLOAT T = (Denom != 0.0f) ? Numer * shz::invf_fsrra(Denom) : 0.0f;
+#else
+			const FLOAT T = Numer / Denom;
+#endif
             FPVRClipVert I;
             I.X = S.X + T * (E.X - S.X);
             I.Y = S.Y + T * (E.Y - S.Y);
@@ -110,7 +142,13 @@ static inline INT ClipPolyNear( const FPVRClipVert* InVerts, INT InCount, FPVRCl
         }
         else if( !SInside && EInside )
         {
-            const FLOAT T = (NearZ - S.Z) / (E.Z - S.Z);
+			const FLOAT Numer = (NearZ - S.Z);
+			const FLOAT Denom = (E.Z - S.Z);
+#if defined(PLATFORM_DREAMCAST)
+			const FLOAT T = (Denom != 0.0f) ? Numer * shz::invf_fsrra(Denom) : 0.0f;
+#else
+			const FLOAT T = Numer / Denom;
+#endif
             FPVRClipVert I;
             I.X = S.X + T * (E.X - S.X);
             I.Y = S.Y + T * (E.Y - S.Y);
@@ -126,7 +164,11 @@ static inline INT ClipPolyNear( const FPVRClipVert* InVerts, INT InCount, FPVRCl
 
     // Copy back to OutVerts
     for( INT i = 0; i < DstCount; i++ )
+	{
+		if( (i & 3) == 0 )
+			dcache_pref_block(&Dst[i]);
         OutVerts[i] = Dst[i];
+	}
     return DstCount;
 }
 
