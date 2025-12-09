@@ -25,6 +25,10 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(PLATFORM_DREAMCAST)
+#include <dreamcast/sh4zam/shz_scalar.hpp>
+#include <dreamcast/sh4zam/shz_trig.hpp>
+#endif
 
 #ifdef _WIN32
 #include <io.h>
@@ -104,15 +108,27 @@ CORE_API DOUBLE appFmod( DOUBLE Y, DOUBLE X )
 }
 CORE_API DOUBLE appSin( DOUBLE Value )
 {
+	#if defined(PLATFORM_DREAMCAST)
+	return (DOUBLE)shz::sinf((float)Value);
+	#else
 	return sin(Value);
+	#endif
 }
 CORE_API DOUBLE appCos( DOUBLE Value )
 {
+	#if defined(PLATFORM_DREAMCAST)
+	return (DOUBLE)shz::cosf((float)Value);
+	#else
 	return cos(Value);
+	#endif
 }
 CORE_API DOUBLE appTan( DOUBLE Value )
 {
+	#if defined(PLATFORM_DREAMCAST)
+	return (DOUBLE)shz::tanf((float)Value);
+	#else
 	return tan(Value);
+	#endif
 }
 CORE_API DOUBLE appAtan( DOUBLE Value )
 {
@@ -150,21 +166,33 @@ CORE_API FLOAT appFrand()
 #if !DEFINED_appFloor
 CORE_API INT appFloor( FLOAT Value )
 {
+	#if defined(PLATFORM_DREAMCAST)
+	return (INT)shz::floorf(Value);
+	#else
 	return (INT)floor(Value);
+	#endif
 }
 #endif
 
 #if !DEFINED_appCeil
 CORE_API INT appCeil( FLOAT Value )
 {
+	#if defined(PLATFORM_DREAMCAST)
+	return (INT)shz::ceilf(Value);
+	#else
 	return (INT)ceil(Value);
+	#endif
 }
 #endif
 
 #if !DEFINED_appRound
 CORE_API INT appRound( FLOAT Value )
 {
+	#if defined(PLATFORM_DREAMCAST)
+	return (INT)shz::roundf(Value);
+	#else
 	return (INT)floor(Value + 0.5);
+	#endif
 }
 #endif
 

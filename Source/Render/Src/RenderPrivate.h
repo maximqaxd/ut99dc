@@ -18,6 +18,9 @@
 #include "Engine.h"
 #include "UnRender.h"
 #include "Amd3d.h"
+#if defined(PLATFORM_DREAMCAST)
+#include <dreamcast/sh4zam/shz_scalar.hpp>
+#endif
 
 /*------------------------------------------------------------------------------------
 	Render package private.
@@ -363,9 +366,9 @@ inline FLOAT SqrtApprox   (FLOAT F)
 	return F;								// compiles to fld [F].
 }
 #elif defined(PLATFORM_DREAMCAST)
-inline FLOAT DivSqrtApprox(FLOAT F) {return frsqrt(F);}
-inline FLOAT DivApprox    (FLOAT F) {return 1.0f / F;}
-inline FLOAT SqrtApprox   (FLOAT F) {return fsqrt(F);}
+inline FLOAT DivSqrtApprox(FLOAT F) {return shz::inv_sqrtf(F);}
+inline FLOAT DivApprox    (FLOAT F) {return shz::divf_fsrra(1.0f, F);}
+inline FLOAT SqrtApprox   (FLOAT F) {return shz::sqrtf_fsrra(F);}
 #elif defined(PLATFORM_LOW_MEMORY)
 inline FLOAT DivSqrtApprox(FLOAT F) {return 1.f / sqrtf(F);}
 inline FLOAT DivApprox    (FLOAT F) {return 1.f / F;}
