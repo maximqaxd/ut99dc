@@ -61,13 +61,19 @@ class KOSDRV_API UKOSViewport : public UViewport
 private:
 	// Static variables.
 	static BYTE KeyMap[KBD_MAX_KEYS]; // DC keycode -> EInputKey map
-	static const BYTE JoyBtnMap[MAX_JOY_BTNS]; // DC joystick button bit -> EInputKey map
+	static const BYTE JoyBtnMapGame[MAX_JOY_BTNS]; // DC controller button bit -> EInputKey (game) map
+	static const BYTE JoyBtnMapUI[MAX_JOY_BTNS];   // DC controller button bit -> EInputKey (UI) map
 
 	// Variables.
 	BYTE KeyState[KBD_MAX_KEYS]; // Current keys held
 	BYTE KeyStatePrev[KBD_MAX_KEYS]; // Previous keys held
-	DWORD JoyState;
-	DWORD JoyStatePrev;
+	DWORD JoyState;      // Current buttons bitmask
+	FLOAT MenuNavTimerX; // Menu repeat timers
+	FLOAT MenuNavTimerY;
+	INT MenuNavDirX;     // -1,0,1
+	INT MenuNavDirY;     // -1,0,1
+	UBOOL bWasInMenu;    // Track menu entry/exit for cursor centering and timer reset
+	FName LastConsoleState; // Track Console state changes (UWindow/Menuing/etc)
 	class UKOSClient* Client;
 	UBOOL Destroyed;
 	UBOOL QuitRequested;
@@ -81,6 +87,7 @@ private:
 
 	// UKOSViewport private methods.
 	UBOOL CauseInputEvent( INT iKey, EInputAction Action, FLOAT Delta=0.0 );
+	UBOOL JoystickAxisEvent( FLOAT RawValue, FLOAT Center, FLOAT Range, EInputKey Key, FLOAT Scale, UBOOL DeadZone );
 	static void InitKeyMap();
 };
 
