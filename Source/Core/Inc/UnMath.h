@@ -6,8 +6,8 @@
 		* Created by Tim Sweeney
 =============================================================================*/
 #ifdef PLATFORM_DREAMCAST
-#include <dreamcast/sh4zam/shz_scalar.hpp>
-#include <dreamcast/sh4zam/shz_trig.hpp>
+#include <sh4zam/shz_scalar.hpp>
+#include <sh4zam/shz_trig.hpp>
 #elif defined(PLATFORM_LOW_MEMORY)
 #include <math.h>
 #endif

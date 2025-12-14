@@ -26,8 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #if defined(PLATFORM_DREAMCAST)
-#include <dreamcast/sh4zam/shz_scalar.hpp>
-#include <dreamcast/sh4zam/shz_trig.hpp>
+#include <sh4zam/shz_sh4zam.h> 
 #endif
 
 #ifdef _WIN32

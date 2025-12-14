@@ -167,13 +167,9 @@ elseif(TARGET_IS_DREAMCAST)
   include_directories(
     ${KOS_BASE}/include
     ${KOS_BASE}/kernel/arch/dreamcast/include
-    ${KOS_BASE}/addons/include
-    ${KOS_BASE}/../kos-ports/include
   )
   link_directories(
     ${KOS_BASE}/lib/dreamcast
-    ${KOS_BASE}/addons/lib/dreamcast
-    ${KOS_BASE}/../kos-ports/lib
   )
 endif()
 
