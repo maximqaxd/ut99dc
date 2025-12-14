@@ -50,6 +50,10 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE CORE_EXPORTS UPACKAGE_NAME=${PROJECT_NAME})
 
+if(TARGET_IS_DREAMCAST)
+  target_link_libraries(${PROJECT_NAME} PRIVATE sh4zam)
+endif()
+
 if(USE_SDL)
   target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARY})
   target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIR})
