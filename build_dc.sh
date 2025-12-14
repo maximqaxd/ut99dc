@@ -16,7 +16,6 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" \
 
 cmake --build "$BUILD_DIR" -- -j$(nproc)
 cmake --install "$BUILD_DIR"
-cmake --build "$BUILD_DIR" --target cdi -- -j$(nproc)
 
 # Create ISO target
 echo "Creating ISO image..."
@@ -56,6 +55,21 @@ if [[ ! -f "$GAMEDATA_DIR/1ST_READ.BIN" ]]; then
 fi
 
 echo "Created 1ST_READ.BIN ($(du -h "$GAMEDATA_DIR/1ST_READ.BIN" | cut -f1))"
+
+echo "Creating UT99.iso..."
+(
+  cd "$GAMEDATA_DIR"
+  mkisofs -V UnrealTournament -G IP.BIN -r -J -l -o ../UT99.iso ./
+)
+
+if [[ ! -f "./UT99.iso" ]]; then
+  echo "Error: Failed to create UT99.iso"
+  exit 1
+fi
+
+echo "Created UT99.iso ($(du -h "./UT99.iso" | cut -f1))"
+
+cmake --build "$BUILD_DIR" --target cdi -- -j$(nproc)
 
 
 EMU_PATH="./flycast-x86_64.AppImage"
