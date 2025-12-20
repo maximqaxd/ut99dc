@@ -56,6 +56,7 @@ class KOSDRV_API UKOSViewport : public UViewport
 	void EndFullscreen();
 	void TickJoystick( maple_device_t* Dev, const FLOAT DeltaTime );
 	void TickKeyboard( maple_device_t* Dev, const FLOAT DeltaTime );
+	void TickMouse( maple_device_t* Dev, const FLOAT DeltaTime );
 	UBOOL TickInput(); // returns true if the viewport has requested death
 
 private:
@@ -67,12 +68,15 @@ private:
 	// Variables.
 	BYTE KeyState[KBD_MAX_KEYS]; // Current keys held
 	BYTE KeyStatePrev[KBD_MAX_KEYS]; // Previous keys held
+	BYTE KbdModsPrev;  // Previous modifier state (kbd_mods_t::raw)
 	DWORD JoyState;      // Current buttons bitmask
+	DWORD MouseButtons;  // Previous mouse buttons bitmask (for edge events)
 	FLOAT MenuNavTimerX; // Menu repeat timers
 	FLOAT MenuNavTimerY;
 	INT MenuNavDirX;     // -1,0,1
 	INT MenuNavDirY;     // -1,0,1
 	UBOOL bWasInMenu;    // Track menu entry/exit for cursor centering and timer reset
+	UBOOL bWasInUWindow; // Track UWindow frontend state (for UI-specific hacks like B->Space exec)
 	FName LastConsoleState; // Track Console state changes (UWindow/Menuing/etc)
 	class UKOSClient* Client;
 	UBOOL Destroyed;
