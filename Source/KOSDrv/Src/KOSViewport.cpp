@@ -1,7 +1,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <kos.h>
-#include "GL/glkos.h"
+#include <dc/maple/keyboard.h>
+#include <dc/maple/mouse.h>
 
 #include "KOSDrv.h"
 #include "UnRender.h"
@@ -115,15 +116,21 @@ UKOSViewport::UKOSViewport( ULevel* InLevel, UKOSClient* InClient )
 	if( GIsEditor )
 		Input->Init( this );
 
+	appMemset( KeyState, 0, sizeof( KeyState ) );
+	appMemset( KeyStatePrev, 0, sizeof( KeyStatePrev ) );
+	KbdModsPrev = 0;
+
 	Destroyed = false;
 	QuitRequested = false;
 	HoldCount = 0;
 	JoyState = 0;
+	MouseButtons = 0;
 	MenuNavTimerX = 0.0f;
 	MenuNavTimerY = 0.0f;
 	MenuNavDirX = 0;
 	MenuNavDirY = 0;
 	bWasInMenu = 0;
+	bWasInUWindow = 0;
 	LastConsoleState = NAME_None;
 	InputUpdateTime = 0.0f;
 
@@ -436,78 +443,20 @@ void UKOSViewport::TickJoystick( maple_device_t* Dev, const FLOAT DeltaTime )
 	if( !State )
 		return;
 
-	// Menu state: use Console state as primary source of truth.
-	// Rationale: When the Console consumes key events (Menuing/MenuTyping/etc), the Input system may
-	// not reflect key-down state; also some UI paths can desync bShowMenu from actual menu handling.
-	static const FName NAME_Menuing     ( TEXT("Menuing") );
-	static const FName NAME_EndMenuing  ( TEXT("EndMenuing") );
-	static const FName NAME_MenuTyping  ( TEXT("MenuTyping") );
-	static const FName NAME_KeyMenuing  ( TEXT("KeyMenuing") );
-	static const FName NAME_UWindow     ( TEXT("UWindow") ); // UTMenu.UTConsole frontend / UWindow system
-
-	FName ConsoleState = NAME_None;
-	if( Console && Console->GetStateFrame() && Console->GetStateFrame()->StateNode )
-		ConsoleState = Console->GetStateFrame()->StateNode->GetFName();
-
-	const UBOOL bConsoleInMenu =
-		( ConsoleState == NAME_Menuing )
-	||	( ConsoleState == NAME_EndMenuing )
-	||	( ConsoleState == NAME_MenuTyping )
-	||	( ConsoleState == NAME_KeyMenuing );
-	const UBOOL bConsoleInUWindow =
-		( ConsoleState == NAME_UWindow );
-
-	const UBOOL bInMenu =
-		bConsoleInMenu
-	||	bConsoleInUWindow
-	||	( Actor && Actor->bShowMenu )
-	||	( Actor && Actor->myHUD && Actor->myHUD->MainMenu );
+	// Menu state is computed centrally in TickInput() so it works even without a controller.
+	const UBOOL bInMenu = bShowWindowsMouse;
 	const BYTE* BtnMap = bInMenu ? JoyBtnMapUI : JoyBtnMapGame;
 
 	auto PulseKey = [&](EInputKey K)
 	{
-		// Debug: show what we're trying to send in menus (navigation is currently broken).
-		if( bInMenu && (K==IK_Up || K==IK_Down || K==IK_Left || K==IK_Right || K==IK_Enter || K==IK_Escape) )
-			debugf( TEXT("KOSDrv: Menu PulseKey %d (HUD=%p MainMenu=%p)"), (INT)K, Actor ? Actor->myHUD : NULL, (Actor && Actor->myHUD) ? Actor->myHUD->MainMenu : NULL );
 		CauseInputEvent( K, IST_Press );
 		CauseInputEvent( K, IST_Release );
 	};
 
-	// Buttons: maintain our own button state edges.
-	// (In menu, Console can consume IST_Press events without updating Input->KeyDownTable,
-	// so relying on Input->KeyDown breaks edge detection and repeats.)
 	const DWORD Buttons = State->buttons;
 	const DWORD PrevButtons = JoyState;
 	const DWORD ChangedButtons = Buttons ^ PrevButtons;
 
-	// HACK: Allow "Space=..." bindings (e.g. Space=open ...) to work in UTMenu's UWindow frontend
-	// even before menus are "opened" via ShowMenu. UWindow can consume the key before Input binds fire,
-	// so execute the binding directly on B press.
-	if( bConsoleInUWindow && (ChangedButtons & CONT_B) && (Buttons & CONT_B) && Input && Input->Bindings[IK_Space].Len() )
-	{
-		debugf( TEXT("KOSDrv: UWindow B->Space exec '%s'"), *Input->Bindings[IK_Space] );
-		Exec( *Input->Bindings[IK_Space], *GLog );
-	}
-
-	// On menu enter / menu-state change: reset repeat timers and center cursor.
-	if( bInMenu )
-	{
-		const UBOOL bStateChanged = (ConsoleState != LastConsoleState);
-		if( !bWasInMenu || bStateChanged )
-		{
-			MenuNavTimerX = 0.0f;
-			MenuNavTimerY = 0.0f;
-			MenuNavDirX = 0;
-			MenuNavDirY = 0;
-
-			bShowWindowsMouse = 1;
-			WindowsMouseX = SizeX * 0.5f;
-			WindowsMouseY = SizeY * 0.5f;
-			Client->Engine->MousePosition( this, 0, WindowsMouseX, WindowsMouseY );
-		}
-	}
-	bWasInMenu = bInMenu;
-	LastConsoleState = ConsoleState;
 
 	for( DWORD Bit = 0; Bit < MAX_JOY_BTNS; ++Bit )
 	{
@@ -684,30 +633,182 @@ void UKOSViewport::TickJoystick( maple_device_t* Dev, const FLOAT DeltaTime )
 
 void UKOSViewport::TickKeyboard( maple_device_t* Dev, const FLOAT DeltaTime )
 {
-	kbd_state_t* State = (kbd_state_t*)maple_dev_status( Dev );
+	kbd_state_t* State = kbd_get_state( Dev );
 	if( !State )
 		return;
 
-	// Emit key events for the regular input system
-	appMemcpy( KeyStatePrev, KeyState, sizeof( KeyState ) );
-	appMemcpy( KeyState, State->matrix, sizeof( KeyState ) );
-	for( INT i = 0; i < MAX_KBD_KEYS; ++i )
+	// Emit key events for the regular input system.
+	auto TranslateKOSKey = [](INT K) -> EInputKey
 	{
-		if( KeyMap[i] )
+		if( K >= KBD_KEY_A && K <= KBD_KEY_Z )     return (EInputKey)(IK_A + (K - KBD_KEY_A));
+		if( K >= KBD_KEY_1 && K <= KBD_KEY_9 )     return (EInputKey)(IK_1 + (K - KBD_KEY_1));
+		if( K >= KBD_KEY_F1 && K <= KBD_KEY_F12 )  return (EInputKey)(IK_F1 + (K - KBD_KEY_F1));
+
+		switch( K )
 		{
-			if( KeyState[i] && !KeyStatePrev[i] )
-				CauseInputEvent( KeyMap[i], IST_Press );
-			else if( !KeyState[i] && KeyStatePrev[i ])
-				CauseInputEvent( KeyMap[i], IST_Release );
+			case KBD_KEY_0:         return IK_0;
+			case KBD_KEY_ENTER:     return IK_Enter;
+			case KBD_KEY_ESCAPE:    return IK_Escape;
+			case KBD_KEY_BACKSPACE: return IK_Backspace;
+			case KBD_KEY_TAB:       return IK_Tab;
+			case KBD_KEY_SPACE:     return IK_Space;
+
+			case KBD_KEY_MINUS:     return IK_Minus;
+			case KBD_KEY_PLUS:      return IK_Equals;
+			case KBD_KEY_LBRACKET:  return IK_LeftBracket;
+			case KBD_KEY_RBRACKET:  return IK_RightBracket;
+			case KBD_KEY_BACKSLASH: return IK_Backslash;
+			case KBD_KEY_SEMICOLON: return IK_Semicolon;
+			case KBD_KEY_QUOTE:     return IK_SingleQuote;
+			case KBD_KEY_TILDE:     return IK_Tilde;
+			case KBD_KEY_COMMA:     return IK_Comma;
+			case KBD_KEY_PERIOD:    return IK_Period;
+			case KBD_KEY_SLASH:     return IK_Slash;
+
+			case KBD_KEY_INSERT:    return IK_Insert;
+			case KBD_KEY_HOME:      return IK_Home;
+			case KBD_KEY_PGUP:      return IK_PageUp;
+			case KBD_KEY_DEL:       return IK_Delete;
+			case KBD_KEY_END:       return IK_End;
+			case KBD_KEY_PGDOWN:    return IK_PageDown;
+
+			case KBD_KEY_RIGHT:     return IK_Right;
+			case KBD_KEY_LEFT:      return IK_Left;
+			case KBD_KEY_DOWN:      return IK_Down;
+			case KBD_KEY_UP:        return IK_Up;
+
+			case KBD_KEY_PAUSE:     return IK_Pause;
+			case KBD_KEY_CAPSLOCK:  return IK_CapsLock;
+
+			default:                return IK_None;
 		}
+	};
+
+	for( INT i = 0; i < KBD_MAX_KEYS; ++i )
+	{
+		EInputKey UEKey = (EInputKey)KeyMap[i];
+		if( UEKey == IK_None )
+			UEKey = TranslateKOSKey( i );
+		if( UEKey == IK_None )
+			continue;
+
+		const UBOOL bDown = (State->key_states[i].raw & KEY_STATE_IS_DOWN) ? 1 : 0;
+		const UBOOL bWasDown = KeyState[i] ? 1 : 0;
+
+		if( bDown && !bWasDown )
+			CauseInputEvent( UEKey, IST_Press );
+		else if( !bDown && bWasDown )
+			CauseInputEvent( UEKey, IST_Release );
+
+		KeyState[i] = bDown ? 1 : 0;
+	}
+
+	// Modifiers (Ctrl/Shift/Alt) live in kbd_cond_t::modifiers on Dreamcast.
+	{
+		const BYTE Mods = State->cond.modifiers.raw;
+		const BYTE Prev = KbdModsPrev;
+
+		const UBOOL bShift = (Mods & KBD_MOD_SHIFT) != 0;
+		const UBOOL bCtrl  = (Mods & KBD_MOD_CTRL) != 0;
+		const UBOOL bAlt   = (Mods & KBD_MOD_ALT) != 0;
+
+		const UBOOL bPrevShift = (Prev & KBD_MOD_SHIFT) != 0;
+		const UBOOL bPrevCtrl  = (Prev & KBD_MOD_CTRL) != 0;
+		const UBOOL bPrevAlt   = (Prev & KBD_MOD_ALT) != 0;
+
+		if( bShift != bPrevShift ) CauseInputEvent( IK_Shift, bShift ? IST_Press : IST_Release );
+		if( bCtrl  != bPrevCtrl  ) CauseInputEvent( IK_Ctrl,  bCtrl  ? IST_Press : IST_Release );
+		if( bAlt   != bPrevAlt   ) CauseInputEvent( IK_Alt,   bAlt   ? IST_Press : IST_Release );
+
+		KbdModsPrev = Mods;
 	}
 
 	// Emit text input
-	const INT Chr = kbd_queue_pop( Dev, true );
-	if( Chr > 0 ) {
-		if( isprint( Chr ) || Chr == '\r' )
+	for( ;; )
+	{
+		INT Chr = kbd_queue_pop( Dev, true );
+		if( Chr == KBD_QUEUE_END )
+			break;
+		if( Chr <= 0 )
+			continue;
+		
+		if( (unsigned)Chr > 0xFFu )
+			continue;
+
+		if( Chr == '\n' )
+			Chr = '\r';
+		if( isprint( (unsigned char)Chr ) || Chr == '\r' )
 			Client->Engine->Key( this, (EInputKey)Chr );
 	}
+}
+
+void UKOSViewport::TickMouse( maple_device_t* Dev, const FLOAT DeltaTime )
+{
+	mouse_state_t* State = (mouse_state_t*)maple_dev_status( Dev );
+	if( !State )
+		return;
+
+	// Mark mouse as available for UI paths.
+	bWindowsMouseAvailable = 1;
+
+	const DWORD Buttons = State->buttons;
+	const DWORD PrevButtons = MouseButtons;
+
+	auto SendButton = [&](DWORD Mask, EInputKey Key)
+	{
+		const UBOOL bDown = (Buttons & Mask) != 0;
+		const UBOOL bWasDown = (PrevButtons & Mask) != 0;
+		if( bDown && !bWasDown )
+			CauseInputEvent( Key, IST_Press );
+		else if( !bDown && bWasDown )
+			CauseInputEvent( Key, IST_Release );
+	};
+
+	SendButton( MOUSE_LEFTBUTTON,  IK_LeftMouse );
+	SendButton( MOUSE_RIGHTBUTTON, IK_RightMouse );
+	SendButton( MOUSE_SIDEBUTTON,  IK_MiddleMouse );
+
+	// Relative deltas (for gameplay look/turn bindings and UI deltas).
+	if( State->dx )
+		CauseInputEvent( IK_MouseX, IST_Axis, (FLOAT)State->dx );
+	if( State->dy )
+		CauseInputEvent( IK_MouseY, IST_Axis, (FLOAT)-State->dy ); // match Win/SDL sign convention
+
+	// Wheel / Z delta.
+	if( State->dz )
+	{
+		CauseInputEvent( IK_MouseW, IST_Axis, (FLOAT)State->dz );
+		const INT Steps = Clamp<INT>(Abs(State->dz), 1, 8);
+		if( State->dz > 0 )
+		{
+			for( INT i = 0; i < Steps; ++i )
+			{
+				CauseInputEvent( IK_MouseWheelUp, IST_Press );
+				CauseInputEvent( IK_MouseWheelUp, IST_Release );
+			}
+		}
+		else
+		{
+			for( INT i = 0; i < Steps; ++i )
+			{
+				CauseInputEvent( IK_MouseWheelDown, IST_Press );
+				CauseInputEvent( IK_MouseWheelDown, IST_Release );
+			}
+		}
+	}
+
+	// If the UI cursor is active, drive absolute cursor position too.
+	if( bShowWindowsMouse )
+	{
+		if( State->dx || State->dy )
+		{
+			WindowsMouseX = Clamp( WindowsMouseX + (FLOAT)State->dx, 0.0f, (FLOAT)(SizeX - 1) );
+			WindowsMouseY = Clamp( WindowsMouseY + (FLOAT)State->dy, 0.0f, (FLOAT)(SizeY - 1) );
+			Client->Engine->MousePosition( this, 0, WindowsMouseX, WindowsMouseY );
+		}
+	}
+
+	MouseButtons = Buttons;
 }
 
 UBOOL UKOSViewport::TickInput()
@@ -718,10 +819,87 @@ UBOOL UKOSViewport::TickInput()
 	const FLOAT CurTime = appSeconds();
 	const FLOAT DeltaTime = CurTime - InputUpdateTime;
 
+	// Determine whether we're in a menu / UI state. (Do this here so it works even with no controller attached.)
+	static const FName NAME_Menuing     ( TEXT("Menuing") );
+	static const FName NAME_EndMenuing  ( TEXT("EndMenuing") );
+	static const FName NAME_MenuTyping  ( TEXT("MenuTyping") );
+	static const FName NAME_KeyMenuing  ( TEXT("KeyMenuing") );
+	static const FName NAME_UWindow     ( TEXT("UWindow") ); // UTMenu.UTConsole frontend / UWindow system
+
+	FName ConsoleState = NAME_None;
+	if( Console && Console->GetStateFrame() && Console->GetStateFrame()->StateNode )
+		ConsoleState = Console->GetStateFrame()->StateNode->GetFName();
+
+	const UBOOL bConsoleInMenu =
+		( ConsoleState == NAME_Menuing )
+	||	( ConsoleState == NAME_EndMenuing )
+	||	( ConsoleState == NAME_MenuTyping )
+	||	( ConsoleState == NAME_KeyMenuing );
+	const UBOOL bConsoleInUWindow =
+		( ConsoleState == NAME_UWindow );
+
+	const UBOOL bInMenu =
+		bConsoleInMenu
+	||	bConsoleInUWindow
+	||	( Actor && Actor->bShowMenu )
+	||	( Actor && Actor->myHUD && Actor->myHUD->MainMenu );
+
+	// On menu enter / menu-state change: reset repeat timers and center cursor.
+	if( bInMenu )
+	{
+		const UBOOL bStateChanged = (ConsoleState != LastConsoleState);
+		if( !bWasInMenu || bStateChanged )
+		{
+			MenuNavTimerX = 0.0f;
+			MenuNavTimerY = 0.0f;
+			MenuNavDirX = 0;
+			MenuNavDirY = 0;
+
+			bShowWindowsMouse = 1;
+			SelectedCursor = 0;
+			WindowsMouseX = SizeX * 0.5f;
+			WindowsMouseY = SizeY * 0.5f;
+			Client->Engine->MousePosition( this, 0, WindowsMouseX, WindowsMouseY );
+		}
+		else
+		{
+			bShowWindowsMouse = 1;
+			SelectedCursor = 0;
+		}
+	}
+	else
+	{
+		bShowWindowsMouse = 0;
+	}
+	bWasInMenu = bInMenu;
+	bWasInUWindow = bConsoleInUWindow;
+	LastConsoleState = ConsoleState;
+
 	// Check keyboard
 	Dev = maple_enum_type( 0, MAPLE_FUNC_KEYBOARD );
-	if ( Dev )
+	if( Dev )
 		TickKeyboard( Dev, DeltaTime );
+	else
+	{
+		// No keyboard present: release anything we still think is down (prevents stuck keys on disconnect).
+		for( INT i = 0; i < KBD_MAX_KEYS; ++i )
+		{
+			if( KeyMap[i] && KeyState[i] )
+				CauseInputEvent( KeyMap[i], IST_Release );
+			KeyState[i] = 0;
+		}
+		if( KbdModsPrev & KBD_MOD_SHIFT ) CauseInputEvent( IK_Shift, IST_Release );
+		if( KbdModsPrev & KBD_MOD_CTRL  ) CauseInputEvent( IK_Ctrl,  IST_Release );
+		if( KbdModsPrev & KBD_MOD_ALT   ) CauseInputEvent( IK_Alt,   IST_Release );
+		KbdModsPrev = 0;
+	}
+
+	// Check mouse
+	Dev = maple_enum_type( 0, MAPLE_FUNC_MOUSE );
+	if( Dev )
+		TickMouse( Dev, DeltaTime );
+	else
+		bWindowsMouseAvailable = 0;
 
 	// Check joystick
 	Dev = maple_enum_type( 0, MAPLE_FUNC_CONTROLLER );
